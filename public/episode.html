@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Episode | Democracy Innovators Podcast</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Newsreader:opsz,wght@6..72,400;6..72,600;6..72,700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/css/styles.css?v=20260415-rainbow-1" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="site-header">
+        <div class="header-row">
+          <a class="brand-link" href="/">Democracy Innovators Podcast</a>
+          <nav class="main-nav" aria-label="Main">
+            <a href="/">Home</a>
+            <a href="/about/">About</a>
+            <a href="/listen/">Listen</a>
+            <a href="/subscribe/">Subscribe</a>
+            <a href="/privacy/">Privacy</a>
+          </nav>
+          <div class="header-actions">
+            <a class="topbar-donate" href="https://www.paypal.com/ncp/payment/7KCR9XBSCQVMG" target="_blank" rel="noopener noreferrer">Donate</a>
+            <a class="ghost-link" href="/admin/login">Admin</a>
+            <a class="ghost-btn" href="/subscribe/">Subscribe</a>
+          </div>
+        </div>
+      </header>
+
+      <a class="back-link" href="/">Back to all episodes</a>
+
+      <article id="episode" class="episode-article"></article>
+
+      <section class="comments" aria-labelledby="comments-title">
+        <h2 id="comments-title">Comments</h2>
+        <form id="comment-form" class="comment-form" novalidate>
+          <label for="name">Name</label>
+          <input id="name" name="name" type="text" maxlength="80" required />
+
+          <label for="message">Comment</label>
+          <textarea
+            id="message"
+            name="message"
+            minlength="8"
+            maxlength="1200"
+            rows="5"
+            required
+            placeholder="Share a thought or question about this episode"
+          ></textarea>
+
+          <button type="submit">Post comment</button>
+          <p id="form-status" class="form-status" role="status"></p>
+        </form>
+
+        <ul id="comments-list" class="comments-list"></ul>
+      </section>
+
+      <footer class="footer">
+        <div class="subscribe-grid">
+          <button type="button" class="social-link social-action" data-share-button aria-label="Share this page"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5a3 3 0 1 1 .1 1.9l-5.3 2.7a3 3 0 0 1 0 3l5.3 2.7A3 3 0 1 1 14 17.9l-5.3-2.7a3 3 0 1 1 0-6l5.3-2.7A3 3 0 0 1 15 5Z"/></svg><span>Share</span></button>
+          <a class="social-link" href="https://podcasts.apple.com/us/podcast/democracy-innovators-podcast/id1806614367" target="_blank" rel="noopener noreferrer"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 100 20 10 10 0 000-20Zm0 4.5a2.2 2.2 0 110 4.4 2.2 2.2 0 010-4.4Zm0 6.2c2.4 0 4.4 2 4.4 4.4v.4H7.6v-.4c0-2.4 2-4.4 4.4-4.4Z"/></svg><span>Apple</span></a>
+          <a class="social-link" href="https://open.spotify.com/show/7e1DjGuFaHZlgDc6e7xmnr" target="_blank" rel="noopener noreferrer"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 100 20 10 10 0 000-20Zm4.8 13.7a.9.9 0 01-1.3.3 8.3 8.3 0 00-7.2-.8.9.9 0 11-.6-1.7 10 10 0 018.7 1 .9.9 0 01.4 1.2Zm1.3-3a1 1 0 01-1.3.5 10.9 10.9 0 00-9-1 .9.9 0 11-.6-1.7 12.8 12.8 0 0110.6 1.1 1 1 0 01.3 1.2Zm.1-3.3a1.1 1.1 0 01-1.4.5 13.3 13.3 0 00-10.9-1.1 1 1 0 11-.6-1.8 15.3 15.3 0 0112.4 1.2 1.1 1.1 0 01.5 1.2Z"/></svg><span>Spotify</span></a>
+          <a class="social-link" href="/rss.xml" target="_blank" rel="noopener noreferrer"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="18" r="2"/><path d="M4 10a10 10 0 0110 10h-3a7 7 0 00-7-7v-3Zm0-6a16 16 0 0116 16h-3A13 13 0 004 7V4Z"/></svg><span>RSS</span></a>
+          <a class="social-link" href="https://www.youtube.com/@DemocracyInnovatorsPodcast" target="_blank" rel="noopener noreferrer"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.6 8.2a2.8 2.8 0 00-2-2c-1.8-.5-7.6-.5-7.6-.5s-5.8 0-7.6.5a2.8 2.8 0 00-2 2A29 29 0 002 12a29 29 0 00.4 3.8 2.8 2.8 0 002 2c1.8.5 7.6.5 7.6.5s5.8 0 7.6-.5a2.8 2.8 0 002-2A29 29 0 0022 12a29 29 0 00-.4-3.8ZM10 15.4V8.6l6 3.4-6 3.4Z"/></svg><span>YouTube</span></a>
+          <a class="social-link" href="https://podcast.democracyinnovators.com/@podcast" target="_blank" rel="noopener noreferrer"><svg class="social-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 3.5 6.5v11L12 22l8.5-4.5v-11L12 2Zm0 2.2 6.2 3.3L12 10.8 5.8 7.5 12 4.2Zm-6.5 5 5.5 3v6.5l-5.5-3V9.2Zm7.5 9.5v-6.5l5.5-3v6.5l-5.5 3Z"/></svg><span>Fediverse</span></a>
+        </div>
+        <p class="footer-meta">
+          <a href="/subscribe/">Subscribe</a> · <a href="/privacy/">Privacy</a> · Democracy Innovators Podcast © 2026
+        </p>
+      </footer>
+    </div>
+
+    <script src="/js/episode.js?v=20260411-10" type="module"></script>
+    <script src="/js/share-bar.js?v=20260412-1" type="module"></script>
+    <script src="/js/chatbot.js?v=20260411-10" type="module"></script>
+  </body>
+</html>

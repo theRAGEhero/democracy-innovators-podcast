@@ -1,0 +1,27 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dip-platform-v2
+    restart: unless-stopped
+    user: "0:0"
+    ports:
+      - "127.0.0.1:8098:3000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: file:/data/database/payload.db
+      NEXT_PUBLIC_SERVER_URL: https://stream.democracyinnovators.com
+      NODE_ENV: production
+      PORT: 3000
+    volumes:
+      - ./runtime/database:/data/database
+      - ./runtime/uploads:/app/public/media
+      - ./runtime/embeddings:/data/embeddings
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s

@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, master]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: v2/package-lock.json
+      - run: npm run security:check
+      - run: npm ci --legacy-peer-deps --no-audit --no-fund
+        working-directory: v2
+      - run: npm run lint
+        working-directory: v2
+      - run: npx tsc --noEmit
+        working-directory: v2

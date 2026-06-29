@@ -1,0 +1,53 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*credentials*.txt
+
+# Dependencies and generated output
+node_modules/
+**/node_modules/
+.next/
+**/.next/
+dist/
+build/
+coverage/
+test-results/
+playwright-report/
+*.tsbuildinfo
+
+# Runtime state and personal data
+runtime/
+**/runtime/
+data/
+logs/
+*.log
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+public/media/
+**/public/media/
+
+# Exports, archives and local deployment copies
+DIP-platform.zip
+*.zip
+*.tar
+*.tar.gz
+democracy-innovators-podcast.ghost.*.json
+stream-democracyinnovators.service
+stream.democracyinnovators.com.nginx
+
+# Local tooling and OS files
+.codex
+.codex/
+.DS_Store
+.idea/
+.vscode/

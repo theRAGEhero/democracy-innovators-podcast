@@ -1,0 +1,16 @@
+.git
+.env
+.env.*
+!.env.example
+.next
+node_modules
+runtime
+public/media
+test-results
+playwright-report
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.log
+admin-credentials.txt

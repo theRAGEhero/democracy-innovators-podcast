@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin | Democracy Innovators</title>
+    <link rel="stylesheet" href="/css/styles.css?v=20260415-rainbow-1" />
+    <link rel="stylesheet" href="/css/admin.css?v=20260411-2" />
+  </head>
+  <body>
+    <main class="admin-shell">
+      <section class="admin-card">
+        <div class="admin-head">
+          <h1>Admin Dashboard</h1>
+          <button id="logout" class="logout-btn" type="button">Logout</button>
+        </div>
+
+        <p class="admin-muted">Create a basic post to publish in the podcast feed.</p>
+
+        <form id="create-post-form" class="admin-form" novalidate>
+          <label for="title">Title</label>
+          <input id="title" name="title" type="text" maxlength="180" required />
+
+          <label for="excerpt">Excerpt</label>
+          <input id="excerpt" name="excerpt" type="text" maxlength="320" />
+
+          <label for="youtubeUrl">YouTube URL (optional)</label>
+          <input id="youtubeUrl" name="youtubeUrl" type="url" placeholder="https://www.youtube.com/watch?v=..." />
+
+          <label for="content">Content</label>
+          <textarea id="content" name="content" rows="10" minlength="20" maxlength="15000" required></textarea>
+
+          <label class="checkline">
+            <input id="includeDonate" name="includeDonate" type="checkbox" checked />
+            Include Donate on PayPal button
+          </label>
+
+          <button type="submit">Create post</button>
+          <p id="status" class="admin-status" role="status"></p>
+        </form>
+      </section>
+    </main>
+
+    <script src="/js/admin.js?v=20260411-2" type="module"></script>
+  </body>
+</html>

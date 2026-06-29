@@ -1,0 +1,19 @@
+{
+  "name": "democracy-innovators-platform",
+  "version": "1.0.0",
+  "description": "Mobile-first podcast web app with comments",
+  "main": "server.js",
+  "scripts": {
+    "build:content": "node scripts/build-content.js",
+    "import:rss": "node scripts/import-rss.js",
+    "scrape:images": "node scripts/scrape-images.js",
+    "embeddings:build": "node scripts/build-embeddings.js",
+    "admin:hash": "node scripts/generate-admin-hash.js",
+    "security:check": "git ls-files --cached --others --exclude-standard -z | node scripts/check-secrets.mjs",
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
