@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import Script from 'next/script'
 
 export const metadata: Metadata = {
@@ -50,7 +51,7 @@ export default function SubscribePage() {
             <input required type="checkbox" />
             <span>I want to receive the Democracy Innovators newsletter by email. I can unsubscribe at any time.</span>
           </label>
-          <p className="newsletter-fineprint">Managed through our existing Ghost publication. See the <a href="/privacy">privacy notice</a>.</p>
+          <p className="newsletter-fineprint">Managed through our existing Ghost publication. See the <Link href="/privacy">privacy notice</Link>.</p>
           <p aria-live="polite" className="newsletter-state newsletter-loading">Sending confirmation…</p>
           <p aria-live="polite" className="newsletter-state newsletter-success">Check your inbox to confirm your subscription.</p>
           <p aria-live="polite" className="newsletter-state newsletter-error" data-members-error>We could not start the subscription. Please try again.</p>

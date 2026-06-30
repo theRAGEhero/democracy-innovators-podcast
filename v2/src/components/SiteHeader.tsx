@@ -11,7 +11,9 @@ export function SiteHeader() {
         <Link href="/episodes">Episodes</Link>
         <Link href="/people">People</Link>
         <Link href="/topics">Topics</Link>
+        <Link href="/map">Map</Link>
         <Link href="/about">About</Link>
+        <Link href="/contact">Contact</Link>
       </nav>
       <Link className="support-link" href="/subscribe">
         Subscribe

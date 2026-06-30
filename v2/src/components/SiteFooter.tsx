@@ -6,6 +6,7 @@ export function SiteFooter() {
       <p>Independent conversations about democracy, governance and civic technology.</p>
       <nav aria-label="Footer navigation">
         <Link href="/rss.xml">RSS</Link>
+        <Link href="/contact">Contact</Link>
         <Link href="/privacy">Privacy</Link>
         <Link href="/admin">Admin</Link>
       </nav>

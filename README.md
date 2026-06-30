@@ -51,6 +51,8 @@ Fetch new public Ghost episodes, covers and guest records with:
 ```bash
 cd v2
 DATABASE_URL=file:./runtime/database/payload.db npm run sync:ghost
+DATABASE_URL=file:./runtime/database/payload.db npm run embeddings:build
+DATABASE_URL=file:./runtime/database/payload.db npm run map:import -- /path/to/democracy_innovators_geo_time_dataset_place_researched.xlsx
 ```
 
 Take a backup first with `v2/scripts/backup.sh`. Avoid running multiple SQLite writers during synchronization.

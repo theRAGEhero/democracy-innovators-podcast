@@ -1,5 +1,3 @@
-/* eslint-disable no-undef */
-
 function addMessage(container, role, text, citations = []) {
   const message = document.createElement('div')
   message.className = `chat-message ${role}`
@@ -12,8 +10,14 @@ function addMessage(container, role, text, citations = []) {
     if (!citation?.url || !citation?.title) continue
     const link = document.createElement('a')
     link.href = citation.url
-    link.textContent = `${citation.title} →`
+    link.textContent = `${citation.label ? `${citation.label}: ` : ''}${citation.title} →`
     message.appendChild(link)
+
+    if (citation.snippet) {
+      const snippet = document.createElement('small')
+      snippet.textContent = citation.snippet
+      message.appendChild(snippet)
+    }
   }
 
   container.appendChild(message)

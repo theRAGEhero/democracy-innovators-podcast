@@ -5,9 +5,12 @@ import { buildConfig, PayloadRequest } from 'payload'
 import { fileURLToPath } from 'url'
 
 import { Categories } from './collections/Categories'
+import { ArchiveChunks } from './collections/ArchiveChunks'
 import { Comments } from './collections/Comments'
+import { ContactSubmissions } from './collections/ContactSubmissions'
 import { Episodes } from './collections/Episodes'
 import { Guests } from './collections/Guests'
+import { MapPoints } from './collections/MapPoints'
 import { Media } from './collections/Media'
 import { Organizations } from './collections/Organizations'
 import { Pages } from './collections/Pages'
@@ -72,11 +75,14 @@ export default buildConfig({
   }),
   collections: [
     Episodes,
+    ArchiveChunks,
+    MapPoints,
     Guests,
     Topics,
     Projects,
     Organizations,
     Sources,
+    ContactSubmissions,
     Comments,
     Pages,
     Posts,

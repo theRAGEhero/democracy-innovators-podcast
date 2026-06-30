@@ -10,6 +10,8 @@ npm run lint
 npx tsc --noEmit
 npm run build
 npm run sync:ghost
+npm run embeddings:build
+npm run map:import -- /path/to/democracy_innovators_geo_time_dataset_place_researched.xlsx
 ./scripts/backup.sh
 ```
 
