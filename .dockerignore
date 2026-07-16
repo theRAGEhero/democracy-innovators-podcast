@@ -10,7 +10,6 @@ runtime
 **/runtime
 public/media
 **/public/media
-v2
 data
 logs
 test-results
