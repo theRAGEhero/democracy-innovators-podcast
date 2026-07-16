@@ -33,6 +33,13 @@ export default async function EpisodePage({ params }: { params: Promise<{ slug: 
 
   const guests = (episode.guests || []).filter((guest) => typeof guest === 'object')
   const topics = (episode.topics || []).filter((topic) => typeof topic === 'object')
+  const organizations = (episode.organizations || []).filter((organization) => typeof organization === 'object')
+  const projects = (episode.projects || []).filter((project) => typeof project === 'object')
+  const usefulLinks = [
+    ...guests.flatMap((guest) => guest.officialLinks?.map((link) => ({ label: link.label || guest.name, url: link.url })) || []),
+    ...organizations.filter((organization) => organization.website).map((organization) => ({ label: organization.name, url: organization.website! })),
+    ...projects.filter((project) => project.website).map((project) => ({ label: project.name, url: project.website! })),
+  ].filter((link, index, links) => links.findIndex((item) => item.url === link.url) === index)
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'PodcastEpisode',
@@ -83,6 +90,14 @@ export default async function EpisodePage({ params }: { params: Promise<{ slug: 
           <p className="section-label">Transcript</p>
           <p>Automatically transcribed and lightly formatted. It may contain errors.</p>
           <p>Use “Ask the archive” to explore this conversation with cited answers.</p>
+          {usefulLinks.length ? (
+            <div className="useful-links">
+              <p className="section-label">Useful links</p>
+              {usefulLinks.map((link) => (
+                <a href={link.url} key={link.url} rel="noreferrer" target="_blank">{link.label} ↗</a>
+              ))}
+            </div>
+          ) : null}
         </aside>
         <article className="episode-content" dangerouslySetInnerHTML={{ __html: episode.html || '' }} id="episode-player" />
       </section>

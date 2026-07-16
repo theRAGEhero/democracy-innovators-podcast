@@ -8,7 +8,7 @@ import { getPayload } from 'payload'
 import React from 'react'
 import PageClient from './page.client'
 
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic'
 export const revalidate = 600
 
 export default async function Page() {
@@ -25,7 +25,7 @@ export default async function Page() {
       categories: true,
       meta: true,
     },
-  })
+  }).catch(() => ({ docs: [], page: 1, totalDocs: 0, totalPages: 0 }))
 
   return (
     <div className="pt-24 pb-24">

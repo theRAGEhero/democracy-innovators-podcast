@@ -102,7 +102,13 @@ body::before {
 .episode-heading h1, .profile-identity h1 { margin: 18px 0 26px; font-size: clamp(3.5rem, 7vw, 7rem); font-weight: 400; letter-spacing: -.06em; line-height: .88; text-wrap: balance; }
 .episode-deck, .profile-summary { max-width: 700px; color: var(--muted); font-size: 1.2rem; line-height: 1.55; }
 .episode-cover, .profile-portrait, .profile-monogram { width: 100%; object-fit: cover; filter: saturate(.8); }
-.episode-cover { aspect-ratio: 16 / 9; }
+.episode-cover {
+  max-height: 620px;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  border: 1px solid var(--ink);
+  background: linear-gradient(135deg, var(--paper-light), rgb(37 90 120 / .08));
+}
 .profile-portrait, .profile-monogram { aspect-ratio: 4 / 5; }
 .profile-monogram { display: grid; place-items: center; color: var(--paper-light); background: var(--blue); font-size: 7rem; }
 .entity-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 25px; }
@@ -113,6 +119,16 @@ body::before {
 
 .transcript-layout { display: grid; grid-template-columns: 240px minmax(0, 760px); gap: 80px; justify-content: center; padding-top: 80px; }
 .transcript-aside { position: sticky; top: 25px; align-self: start; color: var(--muted); font: .85rem/1.5 var(--sans); }
+.useful-links { margin-top: 34px; padding-top: 24px; border-top: 1px solid var(--rule); }
+.useful-links .section-label { margin-bottom: 14px; }
+.useful-links a {
+  display: block;
+  margin: 0 0 12px;
+  color: var(--blue);
+  font-weight: 700;
+  text-decoration: none;
+}
+.useful-links a:hover { color: var(--terracotta); }
 .ask-button { width: 100%; margin-top: 20px; padding: 12px; border: 0; color: white; background: var(--blue); cursor: pointer; font: 600 .72rem/1 var(--sans); text-transform: uppercase; }
 .episode-content { font-size: 1.18rem; line-height: 1.78; }
 .episode-content > *:first-child { margin-top: 0; }
@@ -134,7 +150,11 @@ body::before {
   background: var(--paper-light);
   box-shadow: 10px 10px 0 rgb(37 90 120 / .16);
 }
-.episode-content iframe[src*='podcast.democracyinnovators.com'] { min-height: 112px; }
+.episode-content iframe[src*='podcast.democracyinnovators.com'] {
+  min-height: 112px;
+  border-radius: 18px;
+  background: var(--paper-light);
+}
 .episode-content .kg-embed-card {
   position: relative;
   aspect-ratio: 16 / 9;
@@ -199,6 +219,24 @@ body::before {
 }
 .episode-content .kg-button-card .kg-btn::after { content: '↗'; font-size: 1rem; }
 .episode-content .kg-button-card .kg-btn:hover { color: white; background: transparent; }
+.episode-content a[href*='paypal.com']:not(.kg-btn) {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  margin: .5rem 0 1.5rem;
+  padding: 13px 18px;
+  border: 1px solid var(--ink);
+  color: var(--paper-light);
+  background: var(--blue-dark);
+  font: 700 .72rem/1 var(--sans);
+  letter-spacing: .08em;
+  text-decoration: none;
+  text-transform: uppercase;
+  box-shadow: 6px 6px 0 rgb(23 33 43 / .12);
+}
+.episode-content a[href*='paypal.com']:not(.kg-btn)::after { content: '↗'; font-size: 1rem; }
+.episode-content a[href*='paypal.com']:not(.kg-btn):hover { background: var(--terracotta); }
 .episode-content ul, .episode-content ol { margin: 1.5em 0; padding-left: 1.3em; }
 .episode-content li { margin-bottom: .55em; padding-left: .3em; }
 .episode-content blockquote { margin: 2em 0; padding-left: 22px; border-left: 3px solid var(--terracotta); font-size: 1.4rem; }

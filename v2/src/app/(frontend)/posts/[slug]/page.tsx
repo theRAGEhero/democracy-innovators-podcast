@@ -26,7 +26,8 @@ export async function generateStaticParams() {
     select: {
       slug: true,
     },
-  })
+  }).catch(() => null)
+  if (!posts) return []
 
   const params = posts.docs.map(({ slug }) => {
     return { slug }

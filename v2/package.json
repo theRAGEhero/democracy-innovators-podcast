@@ -11,6 +11,7 @@
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
     "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
     "embeddings:build": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/build-embeddings.ts",
+    "episodes:summarize": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/generate-episode-summaries.ts",
     "import:legacy": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/import-legacy.ts",
     "map:import": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/import-map-points.ts",
     "ii": "cross-env NODE_OPTIONS=--no-deprecation pnpm --ignore-workspace install",

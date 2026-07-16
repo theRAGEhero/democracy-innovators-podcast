@@ -24,7 +24,8 @@ export async function generateStaticParams() {
     select: {
       slug: true,
     },
-  })
+  }).catch(() => null)
+  if (!pages) return []
 
   const params = pages.docs
     ?.filter((doc) => {
