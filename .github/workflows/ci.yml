@@ -14,11 +14,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: v2/package-lock.json
+          cache-dependency-path: package-lock.json
       - run: npm run security:check
       - run: npm ci --legacy-peer-deps --no-audit --no-fund
-        working-directory: v2
       - run: npm run lint
-        working-directory: v2
       - run: npx tsc --noEmit
-        working-directory: v2
+      - run: npm run test:int

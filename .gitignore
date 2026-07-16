@@ -24,6 +24,7 @@ playwright-report/
 *.tsbuildinfo
 
 # Runtime state and personal data
+runtime
 runtime/
 **/runtime/
 data/
