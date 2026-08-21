@@ -1,6 +1,9 @@
 import config from '@payload-config'
 import { getPayload } from 'payload'
 
+import { isRateLimitError, recordApiLimit } from '@/lib/api-limits'
+import { activeModel, activeProvider, generateAnswer, isConfigured } from '@/lib/chat-provider'
+import { SYSTEM_PROMPT, buildUserTurn, looksLikePromptLeak } from '@/lib/chat-prompt'
 import {
   EMBEDDING_MODEL,
   MIN_RETRIEVAL_SCORE,
@@ -12,7 +15,6 @@ import {
   selectEvidenceChunks,
 } from '@/lib/archive-rag'
 
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
 const WINDOW_MS = 60_000
 const MAX_REQUESTS = 10
 const MAX_CHUNKS_TO_SCAN = Number(process.env.CHATBOT_MAX_CHUNKS_TO_SCAN || 5000)
@@ -39,14 +41,14 @@ function isRateLimited(request: Request) {
   return current.count > MAX_REQUESTS
 }
 
-function sourcePrompt(chunks: ReturnType<typeof selectEvidenceChunks>, question: string) {
+function evidenceItems(chunks: ReturnType<typeof selectEvidenceChunks>, question: string) {
   const terms = queryTerms(question)
-  return chunks
-    .map((chunk, index) => {
-      const snippet = evidenceSnippet(chunk.text, terms, 1200)
-      return `[S${index + 1}] ${chunk.episodeTitle}\nURL: /episode/${chunk.episodeSlug}\nEvidence: ${snippet}`
-    })
-    .join('\n\n')
+  return chunks.map((chunk, index) => ({
+    label: `S${index + 1}`,
+    title: chunk.episodeTitle,
+    url: `/episode/${chunk.episodeSlug}`,
+    snippet: evidenceSnippet(chunk.text, terms, 1200),
+  }))
 }
 
 export async function POST(request: Request) {
@@ -54,7 +56,11 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}))
   const question = typeof body.question === 'string' ? body.question.trim().slice(0, 500) : ''
   if (!question) return Response.json({ error: 'Question is required.' }, { status: 400 })
-  if (!process.env.GEMINI_API_KEY) return Response.json({ error: 'The archive assistant is not configured.' }, { status: 503 })
+  // Embeddings are always Gemini; the answer comes from whichever provider is
+  // selected. Both keys have to be present for the assistant to work.
+  if (!process.env.GEMINI_API_KEY || !isConfigured()) {
+    return Response.json({ error: 'The archive assistant is not configured.' }, { status: 503 })
+  }
 
   const payload = await getPayload({ config })
   const chunks = await payload.find({
@@ -78,6 +84,16 @@ export async function POST(request: Request) {
     questionVector = await embedText(questionEmbeddingInput(question), { model: EMBEDDING_MODEL, signal: AbortSignal.timeout(15_000) })
   } catch (error) {
     const timedOut = error instanceof DOMException && error.name === 'TimeoutError'
+    if (!timedOut && isRateLimitError(error)) {
+      await recordApiLimit({
+        provider: 'gemini',
+        operation: 'embedding',
+        model: EMBEDDING_MODEL,
+        status: 429,
+        message: error instanceof Error ? error.message : String(error),
+      })
+      return Response.json({ error: 'The archive assistant has reached its usage limit. Please try again later.' }, { status: 429 })
+    }
     return Response.json({ error: timedOut ? 'The archive assistant timed out.' : 'The archive assistant is temporarily unavailable.' }, { status: timedOut ? 504 : 502 })
   }
 
@@ -91,31 +107,37 @@ export async function POST(request: Request) {
     })
   }
 
-  const sources = sourcePrompt(evidence, question)
-  const prompt = `You are the Democracy Innovators Podcast archive assistant. Answer only from the supplied evidence. Cite factual claims with source markers like [S1]. If the evidence does not answer the question, say that clearly and do not infer beyond it. Keep the answer concise and precise.\n\nQuestion: ${question}\n\nEvidence:\n${sources}`
+  const turn = { system: SYSTEM_PROMPT, user: buildUserTurn(question, evidenceItems(evidence, question)) }
 
-  let response: Response
+  let generated: Awaited<ReturnType<typeof generateAnswer>>
   try {
-    response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(MODEL)}:generateContent`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': process.env.GEMINI_API_KEY,
-      },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 900, thinkingConfig: { thinkingBudget: 0 } },
-      }),
-      signal: AbortSignal.timeout(30_000),
-    })
+    generated = await generateAnswer(turn, { signal: AbortSignal.timeout(30_000) })
   } catch (error) {
     const timedOut = error instanceof DOMException && error.name === 'TimeoutError'
     return Response.json({ error: timedOut ? 'The archive assistant timed out.' : 'The archive assistant is temporarily unavailable.' }, { status: timedOut ? 504 : 502 })
   }
 
-  if (!response.ok) return Response.json({ error: 'The model provider returned an error.' }, { status: 502 })
-  const result = await response.json()
-  const answer = result?.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text || '').join('\n').trim()
+  if (!generated.ok) {
+    // Keep the upstream status: a 429 (quota) must be distinguishable from a
+    // genuine provider failure, both for the visitor and for the admin tally.
+    if (generated.status === 429 || isRateLimitError(generated.detail)) {
+      await recordApiLimit({
+        provider: activeProvider(),
+        operation: 'chat',
+        model: activeModel(),
+        status: generated.status,
+        message: generated.detail,
+      })
+      return Response.json({ error: 'The archive assistant has reached its usage limit. Please try again later.' }, { status: 429 })
+    }
+    return Response.json({ error: 'The model provider returned an error.' }, { status: 502 })
+  }
+  // Asking the model not to repeat its instructions is advice, and models do
+  // comply with a direct request to. This is the part that does not depend on
+  // the model behaving.
+  const answer = looksLikePromptLeak(generated.answer)
+    ? 'I can only answer questions about the published podcast archive.'
+    : generated.answer
   const terms = queryTerms(question)
 
   return Response.json({

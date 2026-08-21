@@ -7,6 +7,9 @@ const testDatabasePath = `/tmp/democracy-innovators-vitest-${process.pid}.db`
 
 // Integration tests must never open or mutate the production SQLite database.
 process.env.DATABASE_URL = `file:${testDatabasePath}`
+// The temp file starts empty and the committed migrations only ALTER an
+// existing schema, so let Payload create the tables here (see payload.config).
+process.env.PAYLOAD_SCHEMA_PUSH = 'true'
 rmSync(testDatabasePath, { force: true })
 
 afterAll(() => {

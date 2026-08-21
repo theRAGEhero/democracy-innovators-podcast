@@ -5,6 +5,7 @@ import { ContactForm } from '@/components/ContactForm'
 export const metadata: Metadata = {
   title: 'Contact',
   description: 'Contact the Democracy Innovators Podcast team.',
+  alternates: { canonical: '/contact' },
 }
 
 export default function ContactPage() {

@@ -5,9 +5,14 @@ import { getPayload } from 'payload'
 
 import type { Episode } from '@/payload-types'
 import { chunkHash, chunkTranscript, documentEmbeddingInput, EMBEDDING_DIMENSION, EMBEDDING_MODEL, embedText } from '@/lib/archive-rag'
+import { isRateLimitError, recordApiLimit } from '@/lib/api-limits'
 
-const REQUEST_DELAY_MS = Number(process.env.GEMINI_EMBEDDING_DELAY_MS || 150)
+// Gemini's free embedding tier caps requests per minute, so pace the calls and
+// back off on 429 instead of aborting the whole run.
+const REQUEST_DELAY_MS = Number(process.env.GEMINI_EMBEDDING_DELAY_MS || 800)
 const MAX_EPISODES = Number(process.env.EMBEDDINGS_MAX_EPISODES || 1000)
+const RATE_LIMIT_RETRIES = Number(process.env.GEMINI_EMBEDDING_RETRIES || 5)
+const RATE_LIMIT_BACKOFF_MS = Number(process.env.GEMINI_EMBEDDING_BACKOFF_MS || 30_000)
 
 type ExistingChunk = {
   id: number | string
@@ -18,6 +23,41 @@ type ExistingChunk = {
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+const isRateLimit = isRateLimitError
+
+// Embed with exponential backoff so a per-minute quota pauses the run instead of
+// killing it. Throws QUOTA_EXHAUSTED once the retries are spent.
+async function embedWithRetry(
+  input: string,
+  log: (message: string) => void,
+): Promise<number[]> {
+  for (let attempt = 0; attempt <= RATE_LIMIT_RETRIES; attempt++) {
+    try {
+      return await embedText(input, {
+        model: EMBEDDING_MODEL,
+        dimension: EMBEDDING_DIMENSION,
+        signal: AbortSignal.timeout(30_000),
+      })
+    } catch (error) {
+      if (!isRateLimit(error) || attempt === RATE_LIMIT_RETRIES) {
+        if (isRateLimit(error)) throw new Error('QUOTA_EXHAUSTED')
+        throw error
+      }
+      await recordApiLimit({
+        provider: 'gemini',
+        operation: 'embedding',
+        model: EMBEDDING_MODEL,
+        status: 429,
+        message: error instanceof Error ? error.message : String(error),
+      })
+      const wait = RATE_LIMIT_BACKOFF_MS * (attempt + 1)
+      log(`Rate limited by Gemini; waiting ${Math.round(wait / 1000)}s (attempt ${attempt + 1}/${RATE_LIMIT_RETRIES})`)
+      await sleep(wait)
+    }
+  }
+  throw new Error('QUOTA_EXHAUSTED')
 }
 
 async function main() {
@@ -69,11 +109,10 @@ async function main() {
         continue
       }
 
-      const embedding = await embedText(documentEmbeddingInput(episode.title, text), {
-        model: EMBEDDING_MODEL,
-        dimension: EMBEDDING_DIMENSION,
-        signal: AbortSignal.timeout(30_000),
-      })
+      const embedding = await embedWithRetry(
+        documentEmbeddingInput(episode.title, text),
+        (message) => payload.logger.warn(message),
+      )
 
       await payload.create({
         collection: 'archive-chunks',
@@ -101,6 +140,12 @@ async function main() {
 }
 
 main().catch((error) => {
+  if (error instanceof Error && error.message === 'QUOTA_EXHAUSTED') {
+    // Progress is persisted per chunk, so re-running later resumes where this
+    // stopped. Exit 0 so scheduled runs don't look like hard failures.
+    console.error('Gemini quota exhausted. Progress saved — re-run this command later to continue.')
+    process.exit(0)
+  }
   console.error(error)
   process.exit(1)
 })

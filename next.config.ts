@@ -23,8 +23,11 @@ const nextConfig: NextConfig = {
       {
         pathname: '/api/media/file/**',
       },
+      {
+        pathname: '/media/**',
+      },
     ],
-    qualities: [100],
+    qualities: [75, 90, 100],
     remotePatterns: [
       ...[NEXT_PUBLIC_SERVER_URL /* 'https://example.com' */].map((item) => {
         const url = new URL(item)
@@ -34,6 +37,10 @@ const nextConfig: NextConfig = {
           protocol: url.protocol.replace(':', '') as 'http' | 'https',
         }
       }),
+      // Legacy episode/guest artwork still hosted on the old Ghost site.
+      { hostname: 'democracyinnovators.com', protocol: 'https' as const },
+      { hostname: 'static.ghost.org', protocol: 'https' as const },
+      { hostname: 'i.ytimg.com', protocol: 'https' as const },
     ],
   },
   webpack: (webpackConfig) => {

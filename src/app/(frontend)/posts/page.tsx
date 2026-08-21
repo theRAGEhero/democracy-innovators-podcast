@@ -58,6 +58,8 @@ export default async function Page() {
 
 export function generateMetadata(): Metadata {
   return {
-    title: `Payload Website Template Posts`,
+    title: 'Articles',
+    description: 'Articles and field notes from Democracy Innovators.',
+    alternates: { canonical: '/posts' },
   }
 }

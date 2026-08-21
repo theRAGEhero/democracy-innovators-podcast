@@ -1,54 +1,69 @@
 'use client'
 
-import { Headphones, Heart, Share2 } from 'lucide-react'
-import type { MouseEvent } from 'react'
+import { BookOpen, Globe, Headphones, Heart, MoreHorizontal, Pause, Play, Send, Share2, Sparkles, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useArchiveAssistant } from './Chatbot'
+import { usePlayer, type PlayerEpisode } from './PlayerProvider'
 
-const supportUrl = 'https://www.paypal.com/ncp/payment/7KCR9XBSCQVMG'
+import { episodeListenPlatforms, fediverseProfile, shareTargets, supportUrl } from '@/lib/platforms'
 
-export function MobileEpisodeBar({ title, url }: { title: string; url: string }) {
-  const shareText = `${title} ${url}`
-  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(shareText)}`
-  const telegramUrl = `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`
-  const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
-  const blueskyUrl = `https://bsky.app/intent/compose?text=${encodeURIComponent(shareText)}`
-  const fediverseUrl = `https://mastodonshare.com/?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`
+const shareIcons: Record<string, typeof Share2> = { Telegram: Send, Fediverse: Globe }
 
-  async function share(event: MouseEvent<HTMLElement>) {
-    if (!navigator.share) return
-    event.preventDefault()
+export function MobileEpisodeBar({ episode, title, url }: { episode: PlayerEpisode | null; title: string; url: string }) {
+  const assistant = useArchiveAssistant()
+  const player = usePlayer()
+  const [more, setMore] = useState(false)
+  const active = episode && player.episode?.id === episode.id
+  // The episode's own Castopod page when we have it, the show profile otherwise.
+  const listen = episodeListenPlatforms.map((platform) =>
+    platform.label.startsWith('Fediverse')
+      ? { label: 'Fediverse (Castopod)', href: episode?.castopodUrl || fediverseProfile }
+      : platform,
+  )
+  const shares = shareTargets(title, url)
 
-    try {
-      await navigator.share({ title, url })
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') return
-      event.currentTarget.parentElement?.setAttribute('open', '')
-    }
+  useEffect(() => {
+    const onOverlay = (event: Event) => { if ((event as CustomEvent).detail !== 'episode-more') setMore(false) }
+    window.addEventListener('ui:overlay-open', onOverlay)
+    return () => window.removeEventListener('ui:overlay-open', onOverlay)
+  }, [])
+
+  function openMore() {
+    window.dispatchEvent(new CustomEvent('ui:overlay-open', { detail: 'episode-more' }))
+    setMore(true)
   }
 
   return (
-    <nav aria-label="Episode actions" className="mobile-episode-bar">
-      <details className="mobile-share-menu">
-        <summary onClick={share}>
-          <Share2 aria-hidden="true" size={19} strokeWidth={1.8} />
-          <span>Share</span>
-        </summary>
-        <div className="mobile-share-panel">
-          <p>Share this episode</p>
-          <a href={whatsappUrl} rel="noopener noreferrer" target="_blank">WhatsApp <span>↗</span></a>
-          <a href={telegramUrl} rel="noopener noreferrer" target="_blank">Telegram <span>↗</span></a>
-          <a href={linkedinUrl} rel="noopener noreferrer" target="_blank">LinkedIn <span>↗</span></a>
-          <a href={blueskyUrl} rel="noopener noreferrer" target="_blank">Bluesky <span>↗</span></a>
-          <a href={fediverseUrl} rel="noopener noreferrer" target="_blank">Fediverse <span>↗</span></a>
+    <>
+      <nav aria-label="Episode actions" className="mobile-episode-bar contextual-dock">
+        {episode ? <button type="button" onClick={() => player.playEpisode(episode)}>{active && player.playing ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}<span>{active && player.playing ? 'Pause' : 'Play'}</span></button> : <a href="#episode-player"><Play aria-hidden="true" /><span>Listen</span></a>}
+        <button type="button" onClick={() => window.dispatchEvent(new Event('episode:open-chapters'))}><BookOpen aria-hidden="true" /><span>Chapters</span></button>
+        <button type="button" onClick={assistant.open}><Sparkles aria-hidden="true" /><span>Ask</span></button>
+        <button type="button" onClick={openMore} aria-expanded={more}><MoreHorizontal aria-hidden="true" /><span>More</span></button>
+      </nav>
+      <div className={`action-sheet-scrim${more ? ' is-open' : ''}`} onClick={() => setMore(false)} aria-hidden="true" />
+      <section className={`action-sheet${more ? ' is-open' : ''}`} role="dialog" aria-modal="true" aria-label="More episode actions" aria-hidden={!more}>
+        <header><div><small>Episode tools</small><strong>Listen, share and support</strong></div><button type="button" onClick={() => setMore(false)} aria-label="Close"><X aria-hidden="true" /></button></header>
+        <div className="action-sheet-links">
+          <p className="section-label">Listen on</p>
+          {listen.map((platform) => (
+            <a href={platform.href} key={platform.label} target="_blank" rel="noreferrer">
+              <Headphones aria-hidden="true" /> {platform.label} <span>↗</span>
+            </a>
+          ))}
+          <p className="section-label">Share</p>
+          {shares.map((target) => {
+            const Icon = shareIcons[target.label] || Share2
+            return (
+              <a href={target.href} key={target.label} target="_blank" rel="noreferrer">
+                <Icon aria-hidden="true" /> {target.label} <span>↗</span>
+              </a>
+            )
+          })}
+          <p className="section-label">Support</p>
+          <a href={supportUrl} target="_blank" rel="noreferrer"><Heart aria-hidden="true" /> Support the podcast <span>↗</span></a>
         </div>
-      </details>
-      <a href="#episode-player">
-        <Headphones aria-hidden="true" size={20} strokeWidth={1.8} />
-        <span>Listen</span>
-      </a>
-      <a href={supportUrl} rel="noopener noreferrer" target="_blank">
-        <Heart aria-hidden="true" size={19} strokeWidth={1.8} />
-        <span>Support</span>
-      </a>
-    </nav>
+      </section>
+    </>
   )
 }

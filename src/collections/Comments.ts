@@ -14,6 +14,7 @@ export const Comments: CollectionConfig = {
   fields: [
     { name: 'episode', type: 'relationship', relationTo: 'episodes', required: true },
     { name: 'name', type: 'text', required: true, maxLength: 80 },
+    { name: 'email', type: 'email', required: true, admin: { description: 'Private — never shown publicly.' } },
     { name: 'message', type: 'textarea', required: true, maxLength: 1200 },
     {
       name: 'status',

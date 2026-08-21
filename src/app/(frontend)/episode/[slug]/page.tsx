@@ -1,10 +1,21 @@
-import { getEpisode, getEpisodes } from '@/lib/content'
+import { getEpisode, getEpisodes, getEpisodeContext } from '@/lib/content'
+import { RelatedEpisodes } from '@/components/RelatedEpisodes'
+import { ShareLinks } from '@/components/ShareLinks'
 import { Comments } from '@/components/Comments'
+import { TranscriptTabs } from '@/components/TranscriptTabs'
+import { normalizeChapters, chapterJsonLd, buildTranscriptChapters, videoObjectJsonLd } from '@/lib/chapters'
+import { embedYouTube, extractCastopodEpisodeUrl, extractYouTubeId, rewriteSupportLinks } from '@/lib/embeds'
+import { annotateSpeakers } from '@/lib/speakers'
+import { transcriptLinks } from '@/lib/links'
+import { breadcrumbJsonLd, metaDescription } from '@/lib/seo'
+import Image from 'next/image'
 import { MobileEpisodeBar } from '@/components/MobileEpisodeBar'
 import { getServerSideURL } from '@/lib/getURL'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { PlayEpisodeButton } from '@/components/PlayEpisodeButton'
+import { AskArchiveButton } from '@/components/Chatbot'
 
 export const revalidate = 3600
 
@@ -15,15 +26,23 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const episode = await getEpisode((await params).slug)
-  if (!episode) return {}
+  if (!episode) return { robots: { index: false, follow: false } }
+  const description = metaDescription(episode.excerpt)
   return {
     title: episode.title,
-    description: episode.excerpt || undefined,
+    description,
     alternates: { canonical: `/episode/${episode.slug}` },
     openGraph: {
-      images: episode.featureImageUrl ? [episode.featureImageUrl] : undefined,
       type: 'article',
+      title: episode.title,
+      description,
+      url: `/episode/${episode.slug}`,
+      publishedTime: episode.publishedAt || undefined,
+      images: episode.featureImageUrl
+        ? [{ url: episode.featureImageUrl, alt: `${episode.title} cover art` }]
+        : undefined,
     },
+    twitter: episode.featureImageUrl ? { images: [episode.featureImageUrl] } : undefined,
   }
 }
 
@@ -35,8 +54,17 @@ export default async function EpisodePage({ params }: { params: Promise<{ slug: 
   const topics = (episode.topics || []).filter((topic) => typeof topic === 'object')
   const organizations = (episode.organizations || []).filter((organization) => typeof organization === 'object')
   const projects = (episode.projects || []).filter((project) => typeof project === 'object')
+  const chapters = normalizeChapters(episode.chapters)
+  const episodeUrl = `${getServerSideURL()}/episode/${episode.slug}`
+  const { related, previous, next } = await getEpisodeContext(episode)
+  const { html: chapteredHtml, toc } = buildTranscriptChapters(rewriteSupportLinks(embedYouTube(episode.html || '')), episode.chapters)
+  // After the chapter pass, never before: buildTranscriptChapters locates its
+  // anchors on a normalised copy of the transcript in which the timestamp
+  // digits count, so rewriting the speaker line first can shift the offsets.
+  const { html: transcriptHtml, speakers } = annotateSpeakers(chapteredHtml, guests.map((guest) => guest.name))
   const usefulLinks = [
     ...guests.flatMap((guest) => guest.officialLinks?.map((link) => ({ label: link.label || guest.name, url: link.url })) || []),
+    ...transcriptLinks(episode.html),
     ...organizations.filter((organization) => organization.website).map((organization) => ({ label: organization.name, url: organization.website! })),
     ...projects.filter((project) => project.website).map((project) => ({ label: project.name, url: project.website! })),
   ].filter((link, index, links) => links.findIndex((item) => item.url === link.url) === index)
@@ -46,18 +74,56 @@ export default async function EpisodePage({ params }: { params: Promise<{ slug: 
     name: episode.title,
     description: episode.excerpt,
     datePublished: episode.publishedAt,
-    url: `${getServerSideURL()}/episode/${episode.slug}`,
+    url: episodeUrl,
     image: episode.featureImageUrl || undefined,
+    inLanguage: 'en',
     partOfSeries: {
       '@type': 'PodcastSeries',
       name: 'Democracy Innovators Podcast',
       url: getServerSideURL(),
     },
+    ...(guests.length
+      ? {
+          actor: guests.map((guest) => ({
+            '@type': 'Person',
+            name: guest.name,
+            url: `${getServerSideURL()}/people/${guest.slug}`,
+          })),
+        }
+      : {}),
+    ...(topics.length ? { about: topics.map((topic) => topic.name) } : {}),
+    ...(chapters.length ? { hasPart: chapterJsonLd(chapters, episodeUrl) } : {}),
+  }
+  const youtubeId = extractYouTubeId(episode.videoUrl, episode.html)
+  const castopodUrl = extractCastopodEpisodeUrl(episode.html)
+  const playerEpisode = episode.audioUrl ? { id: episode.id, slug: episode.slug, title: episode.title, audioUrl: episode.audioUrl, coverUrl: episode.squareCoverUrl || episode.featureImageUrl, castopodUrl, chapters } : null
+  const jsonLd: object[] = [
+    schema,
+    breadcrumbJsonLd([
+      { name: 'Home', url: getServerSideURL() },
+      { name: 'Episodes', url: `${getServerSideURL()}/episodes` },
+      { name: episode.title, url: episodeUrl },
+    ]),
+  ]
+  if (youtubeId) {
+    jsonLd.push(
+      videoObjectJsonLd({
+        youtubeId,
+        name: episode.title,
+        description: episode.excerpt,
+        uploadDate: episode.publishedAt,
+        episodeUrl,
+        chapters,
+      }),
+    )
   }
 
   return (
     <main className="episode-page">
-      <script dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} type="application/ld+json" />
+      <script
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd.length === 1 ? jsonLd[0] : jsonLd) }}
+        type="application/ld+json"
+      />
       <Link className="back-link" href="/episodes">← All episodes</Link>
       <header className="episode-hero">
         <div className="episode-heading">
@@ -71,10 +137,21 @@ export default async function EpisodePage({ params }: { params: Promise<{ slug: 
               ))}
             </div>
           ) : null}
+          <div className="episode-hero-actions">
+            {playerEpisode ? <PlayEpisodeButton className="primary-button" episode={playerEpisode} label="Play episode" /> : castopodUrl ? <a className="primary-button" href={castopodUrl} rel="noreferrer" target="_blank">Listen in Castopod ↗</a> : null}
+            <AskArchiveButton />
+          </div>
         </div>
         {episode.featureImageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img alt="" className="episode-cover" src={episode.featureImageUrl} />
+          <Image
+            alt={`${episode.title} cover art`}
+            className="episode-cover"
+            src={episode.featureImageUrl}
+            width={1280}
+            height={720}
+            priority
+            sizes="(max-width: 900px) 100vw, 760px"
+          />
         ) : null}
       </header>
 
@@ -90,19 +167,15 @@ export default async function EpisodePage({ params }: { params: Promise<{ slug: 
           <p className="section-label">Transcript</p>
           <p>Automatically transcribed and lightly formatted. It may contain errors.</p>
           <p>Use “Ask the archive” to explore this conversation with cited answers.</p>
-          {usefulLinks.length ? (
-            <div className="useful-links">
-              <p className="section-label">Useful links</p>
-              {usefulLinks.map((link) => (
-                <a href={link.url} key={link.url} rel="noreferrer" target="_blank">{link.label} ↗</a>
-              ))}
-            </div>
-          ) : null}
+          <TranscriptTabs toc={toc} episode={playerEpisode} speakers={speakers} links={usefulLinks} />
+          <AskArchiveButton className="aside-ask-button" />
+          <ShareLinks title={episode.title} url={episodeUrl} />
         </aside>
-        <article className="episode-content" dangerouslySetInnerHTML={{ __html: episode.html || '' }} id="episode-player" />
+        <article className={`episode-content${playerEpisode ? ' has-native-audio' : ''}`} dangerouslySetInnerHTML={{ __html: transcriptHtml }} id="episode-player" />
       </section>
+      <RelatedEpisodes related={related} previous={previous} next={next} />
       <Comments episodeId={episode.id} />
-      <MobileEpisodeBar title={episode.title} url={`${getServerSideURL()}/episode/${episode.slug}`} />
+      <MobileEpisodeBar episode={playerEpisode} title={episode.title} url={episodeUrl} />
     </main>
   )
 }

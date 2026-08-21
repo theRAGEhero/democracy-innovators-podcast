@@ -5,6 +5,7 @@ import Script from 'next/script'
 export const metadata: Metadata = {
   title: 'Subscribe',
   description: 'Get new Democracy Innovators conversations by email or follow the podcast.',
+  alternates: { canonical: '/subscribe' },
 }
 
 export default function SubscribePage() {

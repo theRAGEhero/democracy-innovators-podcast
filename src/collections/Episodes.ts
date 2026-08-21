@@ -22,6 +22,12 @@ export const Episodes: CollectionConfig = {
     { name: 'publishedAt', type: 'date', required: true, index: true },
     { name: 'excerpt', type: 'textarea' },
     { name: 'featureImageUrl', type: 'text', label: 'Feature image URL' },
+    {
+      name: 'squareCoverUrl',
+      type: 'text',
+      label: 'Square cover URL',
+      admin: { description: 'Square artwork from Castopod. Populated by `npm run audio:sync`.' },
+    },
     { name: 'audioUrl', type: 'text', label: 'Audio URL' },
     { name: 'videoUrl', type: 'text', label: 'Video URL' },
     {
@@ -31,6 +37,12 @@ export const Episodes: CollectionConfig = {
       admin: { description: 'Trusted legacy HTML imported from Ghost.' },
     },
     { name: 'transcriptText', type: 'textarea', label: 'Plain transcript' },
+    {
+      name: 'chapters',
+      type: 'json',
+      label: 'Chapters',
+      admin: { description: 'Array of { startTime (seconds), title, description }. Imported from Castopod chapter JSON.' },
+    },
     {
       name: 'guests',
       type: 'relationship',

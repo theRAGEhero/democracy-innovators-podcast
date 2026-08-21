@@ -4,6 +4,7 @@ import path from 'node:path'
 import 'dotenv/config'
 import config from '@payload-config'
 import { getPayload } from 'payload'
+import { fetchCastopodFeed, findCastopodEpisode } from './lib/castopod-feed'
 
 const ghostOrigin = process.env.GHOST_ORIGIN || 'https://democracyinnovators.com'
 const ghostContentKey = process.env.GHOST_CONTENT_KEY
@@ -102,6 +103,10 @@ async function main() {
   fs.writeFileSync(path.join(snapshotDir, 'posts.json'), `${JSON.stringify(dataset, null, 2)}\n`)
 
   const payload = await getPayload({ config })
+  const castopodFeed = await fetchCastopodFeed().catch((error) => {
+    payload.logger.warn(`Castopod audio lookup unavailable: ${error instanceof Error ? error.message : String(error)}`)
+    return []
+  })
   const current = await payload.find({ collection: 'episodes', depth: 0, limit: 1000 })
   const existingSlugs = new Set(current.docs.map((episode) => episode.slug))
   const missing = dataset.posts.filter((post) => !existingSlugs.has(post.slug))
@@ -148,6 +153,7 @@ async function main() {
     const searchable = `${post.title} ${post.custom_excerpt || ''} ${(post.plaintext || '').slice(0, 1200)}`
     const topics = topicRules.filter(([, pattern]) => pattern.test(searchable)).map(([name]) => topicIds.get(name)!)
     const youtubeId = post.html?.match(/youtube\.com\/embed\/([^?"&]+)/i)?.[1]
+    const castopod = findCastopodEpisode({ slug: post.slug, title: post.title, html: post.html }, castopodFeed)
     const episode = await payload.create({
       collection: 'episodes',
       data: {
@@ -157,6 +163,7 @@ async function main() {
         publishedAt: post.published_at,
         excerpt: excerptFor(post),
         featureImageUrl,
+        audioUrl: castopod?.item.audioUrl,
         videoUrl: youtubeId ? `https://www.youtube.com/watch?v=${youtubeId}` : undefined,
         html: post.html || '',
         transcriptText: post.plaintext || stripHTML(post.html || ''),

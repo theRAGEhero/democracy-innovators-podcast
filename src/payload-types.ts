@@ -77,6 +77,8 @@ export interface Config {
     sources: Source;
     'contact-submissions': ContactSubmission;
     comments: Comment;
+    'page-views': PageView;
+    'api-limits': ApiLimit;
     pages: Page;
     posts: Post;
     media: Media;
@@ -109,6 +111,8 @@ export interface Config {
     sources: SourcesSelect<false> | SourcesSelect<true>;
     'contact-submissions': ContactSubmissionsSelect<false> | ContactSubmissionsSelect<true>;
     comments: CommentsSelect<false> | CommentsSelect<true>;
+    'page-views': PageViewsSelect<false> | PageViewsSelect<true>;
+    'api-limits': ApiLimitsSelect<false> | ApiLimitsSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
@@ -183,6 +187,10 @@ export interface Episode {
   publishedAt: string;
   excerpt?: string | null;
   featureImageUrl?: string | null;
+  /**
+   * Square artwork from Castopod. Populated by `npm run audio:sync`.
+   */
+  squareCoverUrl?: string | null;
   audioUrl?: string | null;
   videoUrl?: string | null;
   /**
@@ -190,6 +198,18 @@ export interface Episode {
    */
   html?: string | null;
   transcriptText?: string | null;
+  /**
+   * Array of { startTime (seconds), title, description }. Imported from Castopod chapter JSON.
+   */
+  chapters?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   guests?: (number | Guest)[] | null;
   topics?: (number | Topic)[] | null;
   projects?: (number | Project)[] | null;
@@ -375,8 +395,43 @@ export interface Comment {
   id: number;
   episode: number | Episode;
   name: string;
+  /**
+   * Private — never shown publicly.
+   */
+  email: string;
   message: string;
   status: 'pending' | 'approved' | 'rejected';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "page-views".
+ */
+export interface PageView {
+  id: number;
+  path: string;
+  count: number;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Times an upstream API refused a call because of quota or rate limits.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "api-limits".
+ */
+export interface ApiLimit {
+  id: number;
+  key: string;
+  day: string;
+  provider: string;
+  operation: 'embedding' | 'chat' | 'other';
+  model?: string | null;
+  count: number;
+  lastStatus?: number | null;
+  lastMessage?: string | null;
+  lastAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -651,6 +706,9 @@ export interface User {
   name?: string | null;
   updatedAt: string;
   createdAt: string;
+  enableAPIKey?: boolean | null;
+  apiKey?: string | null;
+  apiKeyIndex?: string | null;
   email: string;
   resetPasswordToken?: string | null;
   resetPasswordExpiration?: string | null;
@@ -1241,6 +1299,14 @@ export interface PayloadLockedDocument {
         value: number | Comment;
       } | null)
     | ({
+        relationTo: 'page-views';
+        value: number | PageView;
+      } | null)
+    | ({
+        relationTo: 'api-limits';
+        value: number | ApiLimit;
+      } | null)
+    | ({
         relationTo: 'pages';
         value: number | Page;
       } | null)
@@ -1333,10 +1399,12 @@ export interface EpisodesSelect<T extends boolean = true> {
   publishedAt?: T;
   excerpt?: T;
   featureImageUrl?: T;
+  squareCoverUrl?: T;
   audioUrl?: T;
   videoUrl?: T;
   html?: T;
   transcriptText?: T;
+  chapters?: T;
   guests?: T;
   topics?: T;
   projects?: T;
@@ -1496,8 +1564,36 @@ export interface ContactSubmissionsSelect<T extends boolean = true> {
 export interface CommentsSelect<T extends boolean = true> {
   episode?: T;
   name?: T;
+  email?: T;
   message?: T;
   status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "page-views_select".
+ */
+export interface PageViewsSelect<T extends boolean = true> {
+  path?: T;
+  count?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "api-limits_select".
+ */
+export interface ApiLimitsSelect<T extends boolean = true> {
+  key?: T;
+  day?: T;
+  provider?: T;
+  operation?: T;
+  model?: T;
+  count?: T;
+  lastStatus?: T;
+  lastMessage?: T;
+  lastAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1789,6 +1885,9 @@ export interface UsersSelect<T extends boolean = true> {
   name?: T;
   updatedAt?: T;
   createdAt?: T;
+  enableAPIKey?: T;
+  apiKey?: T;
+  apiKeyIndex?: T;
   email?: T;
   resetPasswordToken?: T;
   resetPasswordExpiration?: T;

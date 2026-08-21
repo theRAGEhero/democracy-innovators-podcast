@@ -13,6 +13,8 @@ import { Guests } from './collections/Guests'
 import { MapPoints } from './collections/MapPoints'
 import { Media } from './collections/Media'
 import { Organizations } from './collections/Organizations'
+import { ApiLimits } from './collections/ApiLimits'
+import { PageViews } from './collections/PageViews'
 import { Pages } from './collections/Pages'
 import { Posts } from './collections/Posts'
 import { Projects } from './collections/Projects'
@@ -72,6 +74,15 @@ export default buildConfig({
     client: {
       url: process.env.DATABASE_URL || '',
     },
+    // Use committed migrations rather than dev auto-push. Push's table-recreate
+    // flow conflicts with libSQL on the shared relationships table (it retries
+    // CREATE INDEX for indexes that already exist), which breaks `next dev`.
+    //
+    // The exception is the integration suite: it runs against a fresh empty
+    // file, where there is no existing index to collide with, and the committed
+    // migrations are incremental ALTERs that cannot build a schema from zero —
+    // so push is the only way tables ever appear there. Set by vitest.setup.ts.
+    push: process.env.PAYLOAD_SCHEMA_PUSH === 'true',
   }),
   collections: [
     Episodes,
@@ -84,6 +95,8 @@ export default buildConfig({
     Sources,
     ContactSubmissions,
     Comments,
+    PageViews,
+    ApiLimits,
     Pages,
     Posts,
     Media,

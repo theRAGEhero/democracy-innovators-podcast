@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 
 import { ArchiveMap } from '@/components/ArchiveMap'
 import { getMapPoints } from '@/lib/map-points'
@@ -6,6 +7,7 @@ import { getMapPoints } from '@/lib/map-points'
 export const metadata: Metadata = {
   title: 'Map',
   description: 'Explore Democracy Innovators Podcast episodes, people and projects by geographic context.',
+  alternates: { canonical: '/map' },
 }
 
 export const revalidate = 3600
@@ -22,9 +24,12 @@ export default async function MapPage() {
       </header>
       {points.length ? <ArchiveMap points={points} /> : (
         <section className="empty-map-state">
-          <p className="section-label">No map data yet</p>
-          <h2>Import the researched geography dataset to populate this map.</h2>
-          <p>Run <code>npm run map:import -- /path/to/dataset.xlsx</code> after the local database is configured.</p>
+          <p className="section-label">Map unavailable</p>
+          <h2>The map couldn’t be loaded right now.</h2>
+          <p>
+            Please try again shortly. In the meantime you can browse the archive by{' '}
+            <Link href="/topics">topic</Link> or <Link href="/people">guest</Link>.
+          </p>
         </section>
       )}
     </main>
