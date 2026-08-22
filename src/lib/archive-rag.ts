@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { createClient } from '@libsql/client'
 
 export const EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2'
 export const EMBEDDING_DIMENSION = Number(process.env.GEMINI_EMBEDDING_DIMENSION || 768)
@@ -10,11 +11,15 @@ const WORD_RE = /[a-z0-9]+/gi
 
 export type EmbeddedChunk = {
   id: number | string
+  episodeId?: number | string
   episodeTitle: string
   episodeSlug: string
   chunkIndex: number
   text: string
-  embedding: unknown
+  /** The stored JSON, when the chunk came from Payload. Chunks from
+   *  loadEmbeddedChunks() arrive parsed and carry `vector` instead. */
+  embedding?: unknown
+  vector?: number[]
 }
 
 export type ScoredChunk = EmbeddedChunk & {
@@ -87,6 +92,72 @@ export async function embedText(input: string, options: { apiKey?: string; model
   return vector.map((value: unknown) => Number(value)).filter(Number.isFinite)
 }
 
+// Retrieval reads every chunk on every question. Going through the Payload ORM
+// costs about 24ms per hydrated document — some twenty seconds for the 852
+// chunks here — while the cosine that actually uses them takes 89ms. So the
+// vectors are read straight from SQLite and kept parsed in memory.
+//
+// The cache lives in the process: with more than one instance each would hold
+// its own copy, which is fine at this size but worth knowing.
+type LoadedChunk = Required<Pick<EmbeddedChunk, 'id' | 'episodeId' | 'episodeTitle' | 'episodeSlug' | 'chunkIndex' | 'text' | 'vector'>>
+
+let chunkCache: { key: string; chunks: LoadedChunk[] } | null = null
+
+// One client for the process: opening a connection per question cost more than
+// the invalidation query it was opened for.
+let client: ReturnType<typeof createClient> | null = null
+
+function db() {
+  if (!client) client = createClient({ url: process.env.DATABASE_URL || 'file:./runtime/database/payload.db' })
+  return client
+}
+
+/** Count plus latest edit: changes whenever embeddings:build touches the table,
+ *  so a rebuild is picked up without restarting the container. */
+async function cacheKey(client: ReturnType<typeof db>, model: string) {
+  const result = await client.execute({
+    sql: 'SELECT count(*) AS n, max(updated_at) AS latest FROM archive_chunks WHERE embedding_model = ?',
+    args: [model],
+  })
+  const row = result.rows[0] as { n?: unknown; latest?: unknown }
+  return `${String(row?.n ?? 0)}:${String(row?.latest ?? '')}`
+}
+
+export async function loadEmbeddedChunks(model = EMBEDDING_MODEL): Promise<LoadedChunk[]> {
+  const connection = db()
+  const key = `${model}|${await cacheKey(connection, model)}`
+  if (chunkCache?.key === key) return chunkCache.chunks
+
+  // The model filter is not optional: vectors from different models live in
+  // the same table and comparing across them yields plausible nonsense.
+  const result = await connection.execute({
+    sql: `SELECT id, episode_id, episode_title, episode_slug, chunk_index, text, embedding
+          FROM archive_chunks WHERE embedding_model = ?`,
+    args: [model],
+  })
+  const chunks = result.rows.flatMap((row) => {
+    const vector = parseEmbedding(row.embedding)
+    if (!vector.length) return []
+    return [{
+      id: Number(row.id),
+      episodeId: Number(row.episode_id),
+      episodeTitle: String(row.episode_title || ''),
+      episodeSlug: String(row.episode_slug || ''),
+      chunkIndex: Number(row.chunk_index || 0),
+      text: String(row.text || ''),
+      vector,
+    }]
+  })
+  chunkCache = { key, chunks }
+  return chunks
+}
+
+/** Testing seam: forces the next load to reconnect and re-read. */
+export function clearChunkCache() {
+  chunkCache = null
+  client = null
+}
+
 export function parseEmbedding(value: unknown) {
   if (Array.isArray(value)) return value.map(Number).filter(Number.isFinite)
   if (typeof value === 'string') {
@@ -130,7 +201,9 @@ export function scoreChunks(chunks: EmbeddedChunk[], questionVector: number[], q
   const terms = queryTerms(question)
   return chunks
     .map((chunk) => {
-      const vector = parseEmbedding(chunk.embedding)
+      // Already parsed when it came from loadEmbeddedChunks(); parsing it again
+      // per question is what the cache exists to avoid.
+      const vector = chunk.vector ?? parseEmbedding(chunk.embedding)
       const semanticScore = cosineSimilarity(questionVector, vector)
       const lexicalScore = lexicalMatchScore(chunk, terms)
       const score = semanticScore + lexicalScore * 0.08
@@ -161,11 +234,62 @@ export function selectEvidenceChunks(chunks: ScoredChunk[], limit = 8) {
   return selected.sort((a, b) => b.score - a.score)
 }
 
-export function evidenceSnippet(text: string, terms: string[], maxLength = 280) {
+/** Occurrences to consider before giving up on precision: chunks run to a few
+ *  thousand characters, so this is far above any real count. */
+const MAX_TERM_HITS = 200
+
+/**
+ * Where the passage that actually answers the question begins.
+ *
+ * Taking the first occurrence of any single query word put the window on the
+ * chunk's opening sentence almost every time — one incidental word, none of the
+ * others, and the substance further down left out. Worse, that position sits
+ * before the first speaker cue, so nothing could be attributed either.
+ *
+ * Instead, score each occurrence by how many *distinct* query words fall within
+ * a window starting there, and take the densest.
+ */
+function densestWindow(lower: string, terms: string[], maxLength: number) {
+  const hits: { term: string; index: number }[] = []
+  for (const term of terms) {
+    for (let index = lower.indexOf(term); index >= 0; index = lower.indexOf(term, index + term.length)) {
+      hits.push({ term, index })
+      if (hits.length >= MAX_TERM_HITS) break
+    }
+    if (hits.length >= MAX_TERM_HITS) break
+  }
+  if (!hits.length) return 0
+  hits.sort((a, b) => a.index - b.index)
+
+  let best = { index: hits[0].index, distinct: 0, count: 0 }
+  for (const hit of hits) {
+    const end = hit.index + maxLength
+    const inside = hits.filter((other) => other.index >= hit.index && other.index < end)
+    const distinct = new Set(inside.map((other) => other.term)).size
+    // Ties go to the denser window, then to the earlier one — earlier text is
+    // more likely to be the start of the thought rather than its tail.
+    if (distinct > best.distinct || (distinct === best.distinct && inside.length > best.count)) {
+      best = { index: hit.index, distinct, count: inside.length }
+    }
+  }
+  return best.index
+}
+
+/** The snippet plus where it was cut from, so callers can tell which speaker
+ *  turn the quote belongs to without searching for it again. */
+export function locateEvidenceSnippet(text: string, terms: string[], maxLength = 280) {
   const clean = normalizeText(text)
   const lower = clean.toLowerCase()
-  const firstMatch = terms.map((term) => lower.indexOf(term)).filter((index) => index >= 0).sort((a, b) => a - b)[0] ?? 0
+  const firstMatch = densestWindow(lower, terms, maxLength)
   const start = Math.max(0, firstMatch - 90)
-  const snippet = clean.slice(start, start + maxLength).trim()
-  return `${start > 0 ? '...' : ''}${snippet}${start + maxLength < clean.length ? '...' : ''}`
+  const body = clean.slice(start, start + maxLength).trim()
+  const snippet = `${start > 0 ? '...' : ''}${body}${start + maxLength < clean.length ? '...' : ''}`
+  // `start` backs up 90 characters to give the quote some lead-in, which can
+  // cross back over a speaker change. `matchAt` is where the answer actually
+  // is, and it is the one to use when deciding who was talking.
+  return { snippet, start, matchAt: firstMatch, clean }
+}
+
+export function evidenceSnippet(text: string, terms: string[], maxLength = 280) {
+  return locateEvidenceSnippet(text, terms, maxLength).snippet
 }

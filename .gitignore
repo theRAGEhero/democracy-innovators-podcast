@@ -52,3 +52,6 @@ stream.democracyinnovators.com.nginx
 .DS_Store
 .idea/
 .vscode/
+
+# Working files dropped in by tooling, not sources
+.orca/

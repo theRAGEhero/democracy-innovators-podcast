@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { activeModel, activeProvider, generateAnswer, isConfigured } from '@/lib/chat-provider'
-import { SYSTEM_PROMPT, buildUserTurn, neutralizeUntrusted } from '@/lib/chat-prompt'
+import { activeModel, activeProvider, generateAnswer, isConfigured, streamAnswer } from '@/lib/chat-provider'
 
 type FetchCall = { url: string; init: RequestInit }
 
@@ -18,6 +17,39 @@ function stubFetch(response: { status?: number; body?: unknown; text?: string })
     } as unknown as Response)
   })
   return calls
+}
+
+/** An SSE body delivered in awkward pieces, because a real one arrives split
+ *  wherever the network happened to cut it — including mid-line. */
+function stubStream(chunks: string[], status = 200) {
+  const calls: FetchCall[] = []
+  vi.stubGlobal('fetch', (url: string, init: RequestInit) => {
+    calls.push({ url: String(url), init })
+    const encoder = new TextEncoder()
+    let index = 0
+    return Promise.resolve({
+      ok: status >= 200 && status < 300,
+      status,
+      text: () => Promise.resolve(''),
+      body: {
+        getReader: () => ({
+          read: () =>
+            Promise.resolve(
+              index < chunks.length ? { done: false, value: encoder.encode(chunks[index++]) } : { done: true, value: undefined },
+            ),
+          releaseLock: () => {},
+        }),
+      },
+    } as unknown as Response)
+  })
+  return calls
+}
+
+async function collect(stream: Awaited<ReturnType<typeof streamAnswer>>) {
+  if (!stream.ok) throw new Error('stream failed')
+  const parts: string[] = []
+  for await (const delta of stream.deltas) parts.push(delta)
+  return parts
 }
 
 const body = (calls: FetchCall[]) => JSON.parse(String(calls[0].init.body))
@@ -132,5 +164,59 @@ describe('chat provider', () => {
     vi.stubEnv('CHATBOT_PROVIDER', 'ollama')
     stubFetch({ body: { choices: [] } })
     expect(await generateAnswer(turn, { signal: signal() })).toEqual({ ok: true, answer: '' })
+  })
+
+  it('streams the same text from Gemini, split however the network split it', async () => {
+    vi.stubEnv('CHATBOT_PROVIDER', 'gemini')
+    const calls = stubStream([
+      'data: {"candidates":[{"content":{"parts":[{"text":"Deliberation "}]}}]}\n\ndata: {"candi',
+      'dates":[{"content":{"parts":[{"text":"works."}]}}]}\n\n',
+    ])
+    expect(await collect(await streamAnswer(turn, { signal: signal() }))).toEqual(['Deliberation ', 'works.'])
+    expect(calls[0].url).toContain(':streamGenerateContent?alt=sse')
+  })
+
+  it('streams the same text from Ollama', async () => {
+    vi.stubEnv('CHATBOT_PROVIDER', 'ollama')
+    const calls = stubStream([
+      'data: {"choices":[{"delta":{"content":"Deliberation "}}]}\n\n',
+      'data: {"choices":[{"delta":{"content":"works."}}]}\n\ndata: [DONE]\n\n',
+    ])
+    expect(await collect(await streamAnswer(turn, { signal: signal() }))).toEqual(['Deliberation ', 'works.'])
+    expect(body(calls).stream).toBe(true)
+  })
+
+  it('skips a malformed event rather than ending the answer', async () => {
+    vi.stubEnv('CHATBOT_PROVIDER', 'ollama')
+    stubStream([
+      'data: {"choices":[{"delta":{"content":"before "}}]}\n\ndata: {oops\n\n',
+      'data: {"choices":[{"delta":{}}]}\n\ndata: {"choices":[{"delta":{"content":"after"}}]}\n\n',
+    ])
+    expect(await collect(await streamAnswer(turn, { signal: signal() }))).toEqual(['before ', 'after'])
+  })
+
+  it('reports an upstream refusal instead of opening an empty stream', async () => {
+    stubStream([], 429)
+    const stream = await streamAnswer(turn, { signal: signal() })
+    expect(stream.ok).toBe(false)
+    expect(stream.ok === false && stream.status).toBe(429)
+  })
+
+  it('carries earlier turns as turns, in the shape each provider expects', async () => {
+    const history = [
+      { role: 'user' as const, text: 'Who is Paolo Spada?' },
+      { role: 'assistant' as const, text: 'A researcher on participatory budgeting.' },
+    ]
+
+    vi.stubEnv('CHATBOT_PROVIDER', 'gemini')
+    const gemini = stubFetch({ body: { candidates: [{ content: { parts: [{ text: 'ok' }] } }] } })
+    await generateAnswer({ ...turn, history }, { signal: signal() })
+    // Gemini calls the assistant side "model", and the new question comes last.
+    expect(body(gemini).contents.map((c: { role: string }) => c.role)).toEqual(['user', 'model', 'user'])
+
+    vi.stubEnv('CHATBOT_PROVIDER', 'ollama')
+    const ollama = stubFetch({ body: { choices: [{ message: { content: 'ok' } }] } })
+    await generateAnswer({ ...turn, history }, { signal: signal() })
+    expect(body(ollama).messages.map((m: { role: string }) => m.role)).toEqual(['system', 'user', 'assistant', 'user'])
   })
 })

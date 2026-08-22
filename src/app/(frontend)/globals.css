@@ -788,6 +788,50 @@ body::before {
 .site-footer nav a { color: var(--blue); text-decoration: none; }
 .footer-year { grid-column: 1 / -1; color: var(--muted); font-family: var(--mono); font-size: .68rem; text-transform: uppercase; }
 
+/* Listening platforms in the footer. Each link carries its own --brand and
+   --brand-dark inline (from src/lib/platforms.ts); the rule below is written
+   once and reads whichever fits the current theme. */
+.footer-platforms {
+  grid-column: 1 / -1;
+  order: -1;
+  margin-bottom: var(--space-5);
+  padding-bottom: var(--space-5);
+  border-bottom: 1px solid var(--rule);
+}
+.footer-platforms .section-label { margin-bottom: 14px; }
+.footer-platforms > div { display: flex; flex-wrap: wrap; gap: 10px; }
+.footer-platforms a {
+  /* 44px: the smallest comfortable touch target. */
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-xs);
+  color: var(--brand);
+  transition: border-color var(--dur-fast) var(--ease), background var(--dur-fast) var(--ease);
+}
+.footer-platforms a:hover {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+}
+.footer-platforms svg { width: 20px; height: 20px; fill: currentColor; }
+
+/* Official brand colours do not all clear 3:1 (WCAG 1.4.11) on both grounds,
+   so the dark theme uses the variant measured for it. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .footer-platforms a { color: var(--brand-dark); }
+  :root:not([data-theme='light']) .footer-platforms a:hover {
+    border-color: var(--brand-dark);
+    background: color-mix(in srgb, var(--brand-dark) 14%, transparent);
+  }
+}
+:root[data-theme='dark'] .footer-platforms a { color: var(--brand-dark); }
+:root[data-theme='dark'] .footer-platforms a:hover {
+  border-color: var(--brand-dark);
+  background: color-mix(in srgb, var(--brand-dark) 14%, transparent);
+}
+
 .search-form { max-width: 760px; margin-top: 40px; }
 .search-form label { display: block; margin-bottom: 10px; color: var(--muted); font: .75rem/1.4 var(--sans); text-transform: uppercase; }
 .search-form > div { display: grid; grid-template-columns: 1fr auto; border-bottom: 1px solid var(--rule); }
@@ -1550,8 +1594,50 @@ body[data-player-active] .page-shell { padding-bottom: calc(var(--player-h) + 20
 .assistant-message { max-width: 92%; padding: 12px 14px; border: 1px solid var(--rule); font-size: .9rem; line-height: 1.5; }
 .assistant-message.user { align-self: end; color: var(--on-accent); border-color: var(--blue); background: var(--blue); }
 .assistant-message p { margin: 0; white-space: pre-wrap; }
-.assistant-message a { display: grid; gap: 4px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--rule); color: var(--blue); text-decoration: none; }
-.assistant-message a small { color: var(--muted); font-size: .75rem; font-weight: 400; }
+/* ---------- Assistant conversation ---------- */
+.assistant-intro { display: grid; gap: 8px; padding: 4px 2px; }
+.assistant-intro p { margin: 0; color: var(--muted); font-size: .86rem; line-height: 1.5; }
+.assistant-intro .section-label { margin-top: 6px; color: var(--blue); font: 600 .62rem/1 var(--mono); letter-spacing: .09em; text-transform: uppercase; }
+.assistant-intro button { padding: 10px 12px; border: 1px solid var(--rule); color: var(--ink); font: 500 .82rem/1.35 var(--sans); text-align: left; background: var(--paper); cursor: pointer; }
+.assistant-intro button:hover { border-color: var(--blue); color: var(--blue); }
+/* Sits on the last line of the answer while it is being written. */
+.assistant-cursor { display: inline-block; width: .5em; height: 1em; margin-left: 2px; background: var(--blue); vertical-align: -.15em; animation: assistant-blink 1s step-end infinite; }
+@keyframes assistant-blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .assistant-cursor { animation: none; } }
+
+/* ---------- Assistant citations ----------
+   A source is a card, not a link: it carries the quote, who said it and when,
+   and three ways to act on it. The colour slot and uppercase name are the same
+   treatment the transcript gives that speaker, so a voice looks the same
+   wherever the reader meets it. Sized for the 440px drawer. */
+.assistant-citations { display: grid; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.assistant-citations .section-label { margin: 0; color: var(--muted); font: 600 .62rem/1 var(--mono); letter-spacing: .09em; text-transform: uppercase; }
+.assistant-citation { padding: 11px 12px; border: 1px solid var(--rule); border-left: 3px solid var(--speaker, var(--rule)); background: var(--paper); }
+.assistant-citation > header { display: flex; align-items: baseline; gap: 8px; margin-bottom: 7px; }
+.assistant-citation-label { color: var(--speaker, var(--muted)); font: 600 .62rem/1 var(--mono); }
+.assistant-citation .speaker-name { font-size: .66rem; }
+.assistant-citation .speaker-name::before { width: 5px; height: 5px; margin-right: 6px; }
+.assistant-citation .speaker-time { margin-left: auto; color: var(--muted); font: 500 .66rem/1 var(--mono); }
+.assistant-citation blockquote { margin: 0 0 8px; color: var(--ink); font-size: .82rem; font-style: italic; line-height: 1.5; }
+/* Titles and chapter names come from the archive and can be long; let them wrap
+   inside the card rather than widen it. */
+.assistant-citation-episode { margin: 0; font-size: .76rem; font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+.assistant-citation-chapter { margin: 2px 0 0; color: var(--muted); font-size: .72rem; line-height: 1.35; overflow-wrap: anywhere; }
+.assistant-citation-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.assistant-citation-actions > * {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 9px;
+  border: 1px solid var(--rule);
+  color: var(--ink);
+  font: 600 .68rem/1 var(--sans);
+  text-decoration: none;
+  background: var(--paper-light);
+  cursor: pointer;
+}
+.assistant-citation-actions > *:hover { border-color: var(--speaker, var(--blue)); color: var(--speaker, var(--blue)); }
+.assistant-citation-actions > *:first-child { border-color: var(--speaker, var(--blue)); color: var(--speaker, var(--blue)); }
 .assistant-thinking { margin: 0; color: var(--muted); font-size: .8rem; }
 .assistant-drawer form { padding: 16px 18px calc(16px + env(safe-area-inset-bottom)); border-top: 1px solid var(--rule); }
 .assistant-drawer form > label { display: block; margin-bottom: 7px; color: var(--blue); font: 600 .65rem/1 var(--mono); text-transform: uppercase; }

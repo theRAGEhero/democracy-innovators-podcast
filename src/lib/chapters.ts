@@ -20,6 +20,11 @@ export type TocEntry = {
   anchored: boolean
 }
 
+/** The id given to a chapter heading spliced into the transcript. */
+export function chapterAnchorId(index: number, title: string): string {
+  return `ch-${index + 1}-${slugify(title)}`
+}
+
 export function normalizeChapters(raw: unknown): Chapter[] {
   const list = Array.isArray(raw)
     ? raw
@@ -43,7 +48,7 @@ export function normalizeChapters(raw: unknown): Chapter[] {
   return out.sort((a, b) => a.startTime - b.startTime)
 }
 
-function parseTimestamp(value: unknown): number | null {
+export function parseTimestamp(value: unknown): number | null {
   if (typeof value === 'number') return Math.floor(value)
   if (typeof value !== 'string') return null
   const t = value.trim()
@@ -62,7 +67,9 @@ export function formatTimestamp(totalSeconds: number): string {
   return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`
 }
 
-function slugify(value: string): string {
+/** Also used to build chapter anchors outside this module; the two must
+ *  produce the same id or the links miss. */
+export function slugify(value: string): string {
   return value
     .normalize('NFKD')
     .replace(/[̀-ͯ]/g, '')
@@ -145,7 +152,7 @@ export function buildTranscriptChapters(
   const usedIds = new Set<string>()
 
   chapters.forEach((chapter, index) => {
-    let id = `ch-${index + 1}-${slugify(chapter.title)}`
+    let id = chapterAnchorId(index, chapter.title)
     while (usedIds.has(id)) id = `${id}-x`
     usedIds.add(id)
 
