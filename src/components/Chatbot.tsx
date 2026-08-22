@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Bot, BookOpen, Eraser, ListTree, Play, Send, X } from 'lucide-react'
 
 import { formatTimestamp, type Chapter } from '@/lib/chapters'
+import { AnswerText } from './AnswerText'
 import { usePlayer, type PlayerEpisode } from './PlayerProvider'
 
 type CitationEpisode = { id: number; slug: string; title: string; audioUrl: string; coverUrl?: string | null; chapters?: Chapter[] }
@@ -75,8 +76,11 @@ export function AskArchiveButton({ className = 'ask-archive-button', label = 'As
   return <button className={className} type="button" onClick={assistant.open}><Bot aria-hidden="true" size={18} /><span>{label}</span></button>
 }
 
+/** Ties an [S1] marker in the answer to the card that backs it. */
+const citationDomId = (message: number, label = '') => `citation-${message}-${label}`
+
 /** One source, with the quote and somewhere to go with it. */
-function CitationCard({ citation, onNavigate, index }: { citation: Citation; onNavigate: () => void; index: number }) {
+function CitationCard({ citation, domId, onNavigate, index }: { citation: Citation; domId: string; onNavigate: () => void; index: number }) {
   const player = usePlayer()
   const { speaker, startTime, chapter, episode } = citation
   // Same colour slots the transcript uses, so a source looks the same wherever
@@ -95,11 +99,11 @@ function CitationCard({ citation, onNavigate, index }: { citation: Citation; onN
     }
     // Deliberately does not close the drawer: listening and reading the rest of
     // the answer are the same activity.
-    player.playEpisode(target, startTime ?? 0)
+    player.playEpisode(target, startTime)
   }
 
   return (
-    <article className="assistant-citation" data-speaker={slot}>
+    <article className="assistant-citation" data-speaker={slot} id={domId}>
       <header>
         <span className="assistant-citation-label">{citation.label}</span>
         {speaker ? <span className="speaker-name">{speaker}</span> : null}
@@ -183,6 +187,16 @@ export function ArchiveAssistantProvider({ children }: { children: ReactNode }) 
     if (nearBottom) list.scrollTop = list.scrollHeight
   }, [messages])
 
+  /** Bring the card behind an [S1] marker into view and mark it briefly, so
+   *  the claim and its source are on screen together. */
+  function showSource(message: number, label: string) {
+    const card = document.getElementById(citationDomId(message, label))
+    if (!card) return
+    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    card.classList.add('is-cited')
+    window.setTimeout(() => card.classList.remove('is-cited'), 1600)
+  }
+
   /** Replace the answer being written, leaving the rest of the thread alone. */
   function updateAnswer(change: (message: Message) => Message) {
     setMessages((items) => items.map((item, index) => (index === items.length - 1 ? change(item) : item)))
@@ -260,13 +274,21 @@ export function ArchiveAssistantProvider({ children }: { children: ReactNode }) 
           )}
           {messages.map((message, index) => (
             <article className={`assistant-message ${message.role}`} key={index}>
-              <p>{message.text}{message.streaming && message.text ? <span className="assistant-cursor" aria-hidden="true" /> : null}</p>
+              {message.role === 'user' ? (
+                <p>{message.text}</p>
+              ) : (
+                <div className="assistant-answer">
+                  <AnswerText onSource={(label) => showSource(index, label)} text={message.text} />
+                  {message.streaming && message.text ? <span className="assistant-cursor" aria-hidden="true" /> : null}
+                </div>
+              )}
               {message.citations?.length ? (
                 <div className="assistant-citations">
                   <p className="section-label">Sources</p>
                   {message.citations.map((citation, position) => (
                     <CitationCard
                       citation={citation}
+                      domId={citationDomId(index, citation.label)}
                       index={position}
                       key={`${citation.url}-${citation.label}`}
                       onNavigate={close}

@@ -124,6 +124,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   // A seek requested before the audio has metadata (play from chapter N on an
   // episode that is not loaded yet); applied on loadedmetadata.
   const pendingSeekRef = useRef<number | null>(null)
+  // Starting at a minute means seeking a remote file the moment it is loaded,
+  // which re-issues the range request and can leave the element sitting there
+  // having never begun. Remembering that playback was asked for lets the
+  // element pick it up again once it is actually ready.
+  const wantsPlayRef = useRef(false)
   const [episode, setEpisode] = useState<PlayerEpisode | null>(null)
   const [playing, setPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
@@ -174,7 +179,10 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setError(false)
     if (episode?.id === next.id) {
       if (typeof startAt === 'number') seek(startAt)
-      if (audio.paused) void audio.play().catch(() => setError(true))
+      if (audio.paused) {
+        wantsPlayRef.current = true
+        void audio.play().catch(() => setError(true))
+      }
       else if (typeof startAt !== 'number') audio.pause()
       return
     }
@@ -188,6 +196,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     pendingSeekRef.current = typeof startAt === 'number' ? startAt : null
     audio.src = next.audioUrl
     audio.load()
+    wantsPlayRef.current = true
     void audio.play().catch(() => setError(true))
   }, [episode, previous, seek])
 
@@ -200,8 +209,15 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const toggle = useCallback(() => {
     const audio = audioRef.current
     if (!audio || !episode) return
-    if (audio.paused) void audio.play().catch(() => setError(true))
-    else audio.pause()
+    if (audio.paused) {
+      wantsPlayRef.current = true
+      void audio.play().catch(() => setError(true))
+    } else {
+      // Clear the intent too, so a buffering event does not restart what the
+      // listener just stopped.
+      wantsPlayRef.current = false
+      audio.pause()
+    }
   }, [episode])
 
   const close = useCallback(() => {
@@ -350,11 +366,18 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           if (pending === null) return
           audio.currentTime = Math.max(0, Math.min(pending, audio.duration || pending))
           setCurrentTime(audio.currentTime)
+          // The seek above can interrupt the play() issued when the source was
+          // set, so ask again now that the position is right.
+          if (wantsPlayRef.current && audio.paused) void audio.play().catch(() => setError(true))
+        }}
+        onCanPlay={(event) => {
+          const audio = event.currentTarget
+          if (wantsPlayRef.current && audio.paused) void audio.play().catch(() => setError(true))
         }}
         onEnded={() => setPlaying(false)}
         onError={() => { setError(true); setPlaying(false) }}
         onPause={() => setPlaying(false)}
-        onPlay={() => { setPlaying(true); setError(false) }}
+        onPlay={() => { wantsPlayRef.current = false; setPlaying(true); setError(false) }}
         onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
       />
       {episode ? (
