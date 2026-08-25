@@ -154,6 +154,25 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     return index
   }, [chapters, currentTime])
 
+  /**
+   * Start playback, treating a refusal for want of a user gesture as what it
+   * is: normal. Opening a ?t= link is exactly that case, and showing an error
+   * there would be wrong — the episode is loaded and sitting at the right
+   * moment, a tap away. The intent is dropped too, so `canplay` does not keep
+   * retrying something the browser will keep refusing. Any other refusal is a
+   * real failure and still surfaces.
+   */
+  const startPlayback = useCallback((audio: HTMLAudioElement) => {
+    wantsPlayRef.current = true
+    void audio.play().catch((reason: unknown) => {
+      if (reason instanceof DOMException && reason.name === 'NotAllowedError') {
+        wantsPlayRef.current = false
+        return
+      }
+      setError(true)
+    })
+  }, [])
+
   const seek = useCallback((seconds: number) => {
     const audio = audioRef.current
     if (!audio || !Number.isFinite(seconds)) return
@@ -179,10 +198,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     setError(false)
     if (episode?.id === next.id) {
       if (typeof startAt === 'number') seek(startAt)
-      if (audio.paused) {
-        wantsPlayRef.current = true
-        void audio.play().catch(() => setError(true))
-      }
+      if (audio.paused) startPlayback(audio)
       else if (typeof startAt !== 'number') audio.pause()
       return
     }
@@ -196,9 +212,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     pendingSeekRef.current = typeof startAt === 'number' ? startAt : null
     audio.src = next.audioUrl
     audio.load()
-    wantsPlayRef.current = true
-    void audio.play().catch(() => setError(true))
-  }, [episode, previous, seek])
+    startPlayback(audio)
+  }, [episode, previous, seek, startPlayback])
 
   // Symmetric with playEpisode: going back stores the episode being left, so
   // the control flips between the two.
@@ -210,15 +225,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const audio = audioRef.current
     if (!audio || !episode) return
     if (audio.paused) {
-      wantsPlayRef.current = true
-      void audio.play().catch(() => setError(true))
+      startPlayback(audio)
     } else {
       // Clear the intent too, so a buffering event does not restart what the
       // listener just stopped.
       wantsPlayRef.current = false
       audio.pause()
     }
-  }, [episode])
+  }, [episode, startPlayback])
 
   const close = useCallback(() => {
     const audio = audioRef.current
@@ -368,11 +382,11 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           setCurrentTime(audio.currentTime)
           // The seek above can interrupt the play() issued when the source was
           // set, so ask again now that the position is right.
-          if (wantsPlayRef.current && audio.paused) void audio.play().catch(() => setError(true))
+          if (wantsPlayRef.current && audio.paused) startPlayback(audio)
         }}
         onCanPlay={(event) => {
           const audio = event.currentTarget
-          if (wantsPlayRef.current && audio.paused) void audio.play().catch(() => setError(true))
+          if (wantsPlayRef.current && audio.paused) startPlayback(audio)
         }}
         onEnded={() => setPlaying(false)}
         onError={() => { setError(true); setPlaying(false) }}
@@ -445,7 +459,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
                         onClick={() => {
                           seek(chapter.startTime)
                           setChaptersOpen(false)
-                          if (audioRef.current?.paused) void audioRef.current.play().catch(() => setError(true))
+                          if (audioRef.current?.paused) startPlayback(audioRef.current)
                         }}
                       >
                         <span className="chapter-index-time">{formatTimestamp(chapter.startTime)}</span>
@@ -529,7 +543,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
                           aria-current={index === currentChapter ? 'true' : undefined}
                           onClick={() => {
                             seek(chapter.startTime)
-                            if (audioRef.current?.paused) void audioRef.current.play().catch(() => setError(true))
+                            if (audioRef.current?.paused) startPlayback(audioRef.current)
                           }}
                         >
                           <span className="chapter-index-time">{formatTimestamp(chapter.startTime)}</span>

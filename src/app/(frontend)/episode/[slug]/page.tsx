@@ -15,6 +15,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { PlayEpisodeButton } from '@/components/PlayEpisodeButton'
+import { PlayFromQuery } from '@/components/PlayFromQuery'
 import { AskArchiveButton } from '@/components/Chatbot'
 
 export const revalidate = 3600
@@ -175,6 +176,7 @@ export default async function EpisodePage({ params }: { params: Promise<{ slug: 
       </section>
       <RelatedEpisodes related={related} previous={previous} next={next} />
       <Comments episodeId={episode.id} />
+      <PlayFromQuery episode={playerEpisode} />
       <MobileEpisodeBar episode={playerEpisode} title={episode.title} url={episodeUrl} />
     </main>
   )

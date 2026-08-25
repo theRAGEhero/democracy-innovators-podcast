@@ -3,9 +3,11 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import type { FormEvent, ReactNode } from 'react'
 import Link from 'next/link'
-import { Bot, BookOpen, Eraser, ListTree, Play, Send, X } from 'lucide-react'
+import { Bot, BookOpen, Check, Eraser, Link2, ListTree, Play, Send, X } from 'lucide-react'
 
 import { formatTimestamp, type Chapter } from '@/lib/chapters'
+import { citationShareText } from '@/lib/citation-share'
+import { getClientSideURL } from '@/lib/getURL'
 import { AnswerText } from './AnswerText'
 import { usePlayer, type PlayerEpisode } from './PlayerProvider'
 
@@ -76,12 +78,43 @@ export function AskArchiveButton({ className = 'ask-archive-button', label = 'As
   return <button className={className} type="button" onClick={assistant.open}><Bot aria-hidden="true" size={18} /><span>{label}</span></button>
 }
 
+/**
+ * Put text on the clipboard, or say so when we cannot.
+ *
+ * The async Clipboard API needs a secure context, which production has and a
+ * plain-http preview does not; the textarea fallback is deprecated but still
+ * works everywhere. A copy that silently does nothing is worse than no button,
+ * so the caller is told either way.
+ */
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    try {
+      const field = document.createElement('textarea')
+      field.value = text
+      field.setAttribute('readonly', '')
+      field.style.position = 'fixed'
+      field.style.opacity = '0'
+      document.body.appendChild(field)
+      field.select()
+      const copied = document.execCommand('copy')
+      document.body.removeChild(field)
+      return copied
+    } catch {
+      return false
+    }
+  }
+}
+
 /** Ties an [S1] marker in the answer to the card that backs it. */
 const citationDomId = (message: number, label = '') => `citation-${message}-${label}`
 
 /** One source, with the quote and somewhere to go with it. */
 function CitationCard({ citation, domId, onNavigate, index }: { citation: Citation; domId: string; onNavigate: () => void; index: number }) {
   const player = usePlayer()
+  const [copied, setCopied] = useState<'idle' | 'done' | 'failed'>('idle')
   const { speaker, startTime, chapter, episode } = citation
   // Same colour slots the transcript uses, so a source looks the same wherever
   // it appears. Cycled past the fourth, as there.
@@ -102,6 +135,12 @@ function CitationCard({ citation, domId, onNavigate, index }: { citation: Citati
     player.playEpisode(target, startTime)
   }
 
+  async function copyLink() {
+    const ok = await copyText(citationShareText(citation, getClientSideURL()))
+    setCopied(ok ? 'done' : 'failed')
+    window.setTimeout(() => setCopied('idle'), 2000)
+  }
+
   return (
     <article className="assistant-citation" data-speaker={slot} id={domId}>
       <header>
@@ -119,6 +158,19 @@ function CitationCard({ citation, domId, onNavigate, index }: { citation: Citati
             {startTime ? `Listen at ${formatTimestamp(startTime)}` : 'Listen'}
           </button>
         ) : null}
+        <button
+          aria-label={startTime === undefined ? 'Copy link to this quote' : `Copy link to this moment, ${formatTimestamp(startTime)}`}
+          className="assistant-citation-copy"
+          onClick={copyLink}
+          title="Copy link"
+          type="button"
+        >
+          {copied === 'done' ? <Check aria-hidden="true" size={13} /> : <Link2 aria-hidden="true" size={13} />}
+        </button>
+        {/* An icon that swaps tells a screen reader nothing on its own. */}
+        <span aria-live="polite" className="sr-only">
+          {copied === 'done' ? 'Link copied' : copied === 'failed' ? 'Could not copy the link' : ''}
+        </span>
         {chapter ? (
           <Link href={`${citation.url}#${chapter.id}`} onClick={onNavigate}>
             <ListTree aria-hidden="true" size={13} />

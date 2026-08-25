@@ -1667,6 +1667,10 @@ body[data-player-active] .page-shell { padding-bottom: calc(var(--player-h) + 20
 }
 .assistant-citation-actions > *:hover { border-color: var(--speaker, var(--blue)); color: var(--speaker, var(--blue)); }
 .assistant-citation-actions > *:first-child { border-color: var(--speaker, var(--blue)); color: var(--speaker, var(--blue)); }
+/* Icon only, so it sits beside "Listen at 43:18" without pushing the row onto
+   a second line. Square, to read as a companion to the button before it. */
+.assistant-citation-copy { padding: 6px; }
+.assistant-citation-copy svg { display: block; }
 .assistant-thinking { margin: 0; color: var(--muted); font-size: .8rem; }
 .assistant-drawer form { padding: 16px 18px calc(16px + env(safe-area-inset-bottom)); border-top: 1px solid var(--rule); }
 .assistant-drawer form > label { display: block; margin-bottom: 7px; color: var(--blue); font: 600 .65rem/1 var(--mono); text-transform: uppercase; }
