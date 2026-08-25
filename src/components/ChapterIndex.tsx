@@ -113,7 +113,15 @@ export function ChapterIndex({ toc, episode = null }: { toc: TocEntry[]; episode
                 <a
                   href={`#${entry.id}`}
                   aria-current={entry.id === activeId ? 'true' : undefined}
-                  onClick={() => { player.seek(entry.startTime); setOpen(false) }}
+                  onClick={() => {
+                    // Only follow along when the player is on *this* episode.
+                    // Without the check, opening one episode and clicking a
+                    // chapter scrubbed whatever else was playing to that
+                    // minute. The play button beside this is the explicit way
+                    // to move the player to another episode.
+                    if (episode && player.episode?.id === episode.id) player.seek(entry.startTime)
+                    setOpen(false)
+                  }}
                 >
                   <span className="chapter-index-time">{formatTimestamp(entry.startTime)}</span>
                   <span className="chapter-index-title">{entry.title}</span>

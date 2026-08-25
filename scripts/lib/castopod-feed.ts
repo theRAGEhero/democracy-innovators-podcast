@@ -1,4 +1,14 @@
-export type CastopodFeedEpisode = { slug: string; title: string; audioUrl: string; pageUrl: string; coverUrl: string }
+export type CastopodFeedEpisode = {
+  slug: string
+  title: string
+  audioUrl: string
+  pageUrl: string
+  coverUrl: string
+  /** Podcasting 2.0 <podcast:chapters>. Castopod publishes one per episode, so
+   *  chapters can be read from the feed instead of from files handed over by
+   *  hand — see scripts/import-castopod-chapters.ts. */
+  chaptersUrl: string
+}
 
 const FEED_URLS = [
   'https://podcast.democracyinnovators.com/@podcast/feed.xml',
@@ -30,7 +40,8 @@ export function parseCastopodFeed(xml: string): CastopodFeedEpisode[] {
     // Castopod ships a square cover per episode; the site's own feature image
     // is 16:9, which is the wrong shape for a player tile or an OS media card.
     const coverUrl = decodeXml(item.match(/<itunes:image\b[^>]*\bhref=["']([^"']+)["']/i)?.[1] || '')
-    return audioUrl && slug && title ? [{ slug, title, audioUrl, pageUrl, coverUrl }] : []
+    const chaptersUrl = decodeXml(item.match(/<podcast:chapters\b[^>]*\burl=["']([^"']+)["']/i)?.[1] || '')
+    return audioUrl && slug && title ? [{ slug, title, audioUrl, pageUrl, coverUrl, chaptersUrl }] : []
   })
 }
 

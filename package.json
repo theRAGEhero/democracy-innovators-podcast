@@ -25,7 +25,8 @@
     "sync:ghost": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/sync-ghost.ts",
     "test": "npm run test:int && npm run test:e2e",
     "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts",
-    "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts"
+    "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts",
+    "chapters:castopod": "cross-env NODE_OPTIONS=--no-deprecation tsx scripts/import-castopod-chapters.ts"
   },
   "dependencies": {
     "@libsql/linux-x64-musl": "^0.4.7",

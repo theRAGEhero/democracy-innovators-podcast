@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 
@@ -33,6 +34,10 @@ const newGuestRules: Record<string, string[]> = {
   'giovanni-di-sotto-on-electronic-voting-security-and-democratic-innovation': ['Giovanni Di Sotto'],
   'antoine-vergne-from-missions-publiques-on-scaling-deliberative-decision-making-and-random-selection': ['Antoine Vergne'],
   'paolo-spada-on-participatory-budgeting-citizen-assemblies-and-scaling-democratic-innovation': ['Paolo Spada'],
+  'alberto-fernandez-gibaja-from-international-idea-on-technology-and-democracy': ['Alberto Fernandez Gibaja'],
+  'alvaro-oleart-on-citizen-assemblies-collective-actors-and-democratic-innovation': ['Alvaro Oleart'],
+  'gianluca-misuraca-from-inspiring-futures-on-ai-in-the-public-sector': ['Gianluca Misuraca'],
+  'ryan-koch-from-the-civic-tech-chat-podcast-on-civic-innovation-and-effective-use-of-ai': ['Ryan Koch'],
 }
 
 const topicRules: Array<[string, RegExp]> = [
@@ -73,7 +78,13 @@ function excerptFor(post: GhostPost) {
 async function downloadFeatureImage(post: GhostPost) {
   if (!post.feature_image) return undefined
   const extension = path.extname(new URL(post.feature_image).pathname).toLowerCase() || '.jpg'
-  const relativePath = `episodes/${post.slug}${extension}`
+  // The source URL, not just the slug, decides the filename. Ghost puts a new
+  // image at a new path when one is replaced, so a name built from the slug
+  // alone always matched a file that already existed and the replacement was
+  // skipped in silence — which is how an updated cover stayed stale for weeks.
+  // Existing files still serve as a cache for everything that has not changed.
+  const source = crypto.createHash('sha1').update(post.feature_image).digest('hex').slice(0, 8)
+  const relativePath = `episodes/${post.slug}-${source}${extension}`
   const destination = path.join(runtimeRoot, 'uploads', relativePath)
   fs.mkdirSync(path.dirname(destination), { recursive: true })
 
@@ -180,7 +191,30 @@ async function main() {
     }
   }
 
-  payload.logger.info(`Ghost sync complete: ${dataset.posts.length} downloaded, ${missing.length} episodes and ${importedGuests} guests imported.`)
+  // Episodes already imported are otherwise never revisited, so a cover
+  // replaced on Ghost stayed stale here indefinitely — which is exactly what
+  // happened to Simon Horton. The local filename now carries a hash of the
+  // source URL (see downloadFeatureImage), and Ghost publishes a replacement at
+  // a new path, so a changed image is both detectable and cacheable.
+  let refreshedImages = 0
+  const byId = new Map(current.docs.map((episode) => [episode.slug, episode]))
+  for (const post of dataset.posts) {
+    const existing = byId.get(post.slug)
+    if (!existing || !post.feature_image) continue
+    let featureImageUrl: string | undefined
+    try {
+      featureImageUrl = await downloadFeatureImage(post)
+    } catch (error) {
+      payload.logger.warn(error instanceof Error ? error.message : String(error))
+      continue
+    }
+    if (!featureImageUrl || featureImageUrl === existing.featureImageUrl) continue
+    await payload.update({ collection: 'episodes', id: existing.id, data: { featureImageUrl } })
+    refreshedImages += 1
+    payload.logger.info(`Refreshed cover: ${post.slug}`)
+  }
+
+  payload.logger.info(`Ghost sync complete: ${dataset.posts.length} downloaded, ${missing.length} episodes and ${importedGuests} guests imported, ${refreshedImages} covers refreshed.`)
   process.exit(0)
 }
 
