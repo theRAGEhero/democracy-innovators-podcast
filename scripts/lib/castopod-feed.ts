@@ -8,6 +8,10 @@ export type CastopodFeedEpisode = {
    *  chapters can be read from the feed instead of from files handed over by
    *  hand — see scripts/import-castopod-chapters.ts. */
   chaptersUrl: string
+  /** Podcasting 2.0 <podcast:transcript>, the uploaded SRT. Used to work out
+   *  where in the transcript each chapter begins, for episodes whose subtitles
+   *  are not on the Nextcloud share. */
+  transcriptUrl: string
 }
 
 const FEED_URLS = [
@@ -41,7 +45,10 @@ export function parseCastopodFeed(xml: string): CastopodFeedEpisode[] {
     // is 16:9, which is the wrong shape for a player tile or an OS media card.
     const coverUrl = decodeXml(item.match(/<itunes:image\b[^>]*\bhref=["']([^"']+)["']/i)?.[1] || '')
     const chaptersUrl = decodeXml(item.match(/<podcast:chapters\b[^>]*\burl=["']([^"']+)["']/i)?.[1] || '')
-    return audioUrl && slug && title ? [{ slug, title, audioUrl, pageUrl, coverUrl, chaptersUrl }] : []
+    // Only SubRip: the anchor logic parses SRT cues.
+    const transcript = item.match(/<podcast:transcript\b[^>]*\btype=["']application\/x-subrip["'][^>]*>/i)?.[0] || ''
+    const transcriptUrl = decodeXml(transcript.match(/\burl=["']([^"']+)["']/i)?.[1] || '')
+    return audioUrl && slug && title ? [{ slug, title, audioUrl, pageUrl, coverUrl, chaptersUrl, transcriptUrl }] : []
   })
 }
 
