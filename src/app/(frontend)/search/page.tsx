@@ -2,7 +2,7 @@ import config from '@payload-config'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getPayload } from 'payload'
-import { AskArchiveButton } from '@/components/Chatbot'
+import { ArchiveSearchTabs } from '@/components/ArchiveSearchTabs'
 
 export const metadata: Metadata = {
   title: 'Search',
@@ -91,17 +91,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       <header className="page-intro">
         <p className="section-label">Archive search</p>
         <h1>Find an idea</h1>
-        <form action="/search" className="search-form" role="search">
-          <label htmlFor="q">Search people, episodes and transcripts</label>
-          <div>
-            <input defaultValue={query} id="q" name="q" placeholder="Try deliberative AI" type="search" />
-            <button type="submit">Search</button>
-          </div>
-        </form>
-        <div className="search-assistant-option">
-          <div><strong>Looking for connections across conversations?</strong><span>Ask a question and receive a cited answer from published transcripts.</span></div>
-          <AskArchiveButton label="Ask the archive" />
-        </div>
+        <ArchiveSearchTabs query={query} />
       </header>
 
       {query ? (

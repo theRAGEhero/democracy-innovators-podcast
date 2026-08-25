@@ -843,7 +843,6 @@ body::before {
 .search-results > a span { color: var(--terracotta); font: .68rem/1.4 var(--mono); text-transform: uppercase; }
 .search-results > a strong { font-size: 1.35rem; font-weight: 400; }
 
-.chatbot { position: fixed; right: 22px; bottom: 22px; z-index: var(--z-chat); font-family: var(--sans); }
 .chatbot-toggle { display: block; padding: 13px 17px; border: 1px solid var(--paper-light); color: var(--on-accent); background: var(--blue); box-shadow: var(--shadow-pill); cursor: pointer; font: 600 .72rem/1 var(--sans); letter-spacing: .06em; list-style: none; text-transform: uppercase; }
 .chatbot-toggle::-webkit-details-marker { display: none; }
 .chatbot-panel { position: absolute; right: 0; bottom: 52px; width: min(390px, calc(100vw - 28px)); overflow: hidden; border: 1px solid var(--rule); background: var(--paper-light); box-shadow: var(--shadow-panel); }
@@ -1308,6 +1307,32 @@ body::before {
 .episode-content.has-native-audio .kg-embed-card:has(iframe[src*='podcast.democracyinnovators.com']),
 .episode-content.has-native-audio > iframe[src*='podcast.democracyinnovators.com'],
 .episode-content.has-native-audio > p:has(iframe[src*='podcast.democracyinnovators.com']) { display: none; }
+/* ---------- Archive search: two ways in ----------
+   The tabs make the choice explicit at the point of searching, instead of
+   hiding the assistant behind a promo box beside the search field. */
+.archive-search-tabs { max-width: 760px; margin-top: 40px; }
+.archive-search-tablist { display: flex; gap: 2px; border-bottom: 1px solid var(--rule); }
+.archive-search-tablist button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-bottom: 0;
+  margin-bottom: -1px;
+  color: var(--muted);
+  font: 600 .78rem/1 var(--sans);
+  background: transparent;
+  cursor: pointer;
+}
+.archive-search-tablist button[aria-selected='true'] {
+  border-color: var(--rule);
+  color: var(--blue);
+  background: var(--paper-light);
+}
+.archive-search-tabs .search-form { margin-top: 22px; }
+.archive-search-hint { margin: 12px 0 0; color: var(--muted); font-size: .82rem; line-height: 1.45; }
+
 .search-assistant-option, .archive-search-callout { display: flex; justify-content: space-between; align-items: center; gap: 24px; margin-top: 26px; padding: 18px 20px; border: 1px solid var(--rule); background: var(--paper-light); }
 .search-assistant-option > div { display: grid; gap: 4px; }
 .search-assistant-option strong { font-size: .9rem; }
@@ -1594,6 +1619,54 @@ body[data-player-active] .page-shell { padding-bottom: calc(var(--player-h) + 20
 .assistant-message { max-width: 92%; padding: 12px 14px; border: 1px solid var(--rule); font-size: .9rem; line-height: 1.5; }
 .assistant-message.user { align-self: end; color: var(--on-accent); border-color: var(--blue); background: var(--blue); }
 .assistant-message.user p { margin: 0; white-space: pre-wrap; }
+/* ---------- Assistant bubble ----------
+   The way back into a conversation. Every other panel that opens dismisses the
+   drawer, and only episode pages and /search carry an "Ask the archive" button,
+   so without this the conversation stays alive and unreachable.
+
+   Positioning follows what is already here rather than inventing its own: the
+   `data-player-active` flag set by PlayerProvider, the --player-h variable, and
+   the offsets .chapter-index-fab uses to clear the bottom bar on a phone. That
+   FAB sits on the left, this on the right. */
+.assistant-bubble {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: var(--z-fab);
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  /* Square-ish, like everything else here: a circle would read as imported
+     from another design. */
+  border: 1px solid var(--rule);
+  border-radius: var(--radius-sm);
+  color: var(--on-accent);
+  background: var(--blue);
+  box-shadow: var(--shadow-float);
+  cursor: pointer;
+}
+.assistant-bubble[hidden] { display: none; }
+.assistant-bubble:hover { background: var(--ink); }
+.assistant-bubble-dot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 10px;
+  height: 10px;
+  /* Ringed in the page colour so it reads as a badge rather than a smudge. */
+  border: 2px solid var(--paper-light);
+  border-radius: 50%;
+  background: var(--terracotta);
+}
+body[data-player-active] .assistant-bubble { bottom: calc(var(--player-h) + 28px); }
+
+@media (max-width: 620px) {
+  /* Clears the contextual dock, and the player on top of it when both are up. */
+  .assistant-bubble { right: 14px; bottom: calc(74px + env(safe-area-inset-bottom)); width: 48px; height: 48px; }
+  body[data-player-active] .assistant-bubble { bottom: calc(var(--player-h) + 74px + env(safe-area-inset-bottom)); }
+}
+
 /* ---------- Assistant answers ----------
    The model writes markdown. It is rendered into a small set of elements by
    components/AnswerText.tsx — never as HTML — so these are all the shapes an

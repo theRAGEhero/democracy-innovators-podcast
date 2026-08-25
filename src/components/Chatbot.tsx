@@ -35,6 +35,43 @@ const SAMPLE_QUESTIONS = [
   'Who talked about participatory budgeting?',
 ]
 
+// Where the conversation is kept between page loads. sessionStorage rather
+// than localStorage on purpose: it survives a reload and a link opened in the
+// same tab, and goes when the tab does. Nothing leaves the device and there is
+// nothing to declare on the privacy page.
+const STORAGE_KEY = 'archive-assistant-conversation'
+
+function saveConversation(messages: Message[]) {
+  // A finished answer must not come back mid-stream, cursor blinking, after a
+  // reload.
+  const stored = messages.map(({ streaming: _streaming, ...rest }) => rest)
+  let attempt = stored
+  for (let tries = 0; tries < 2; tries += 1) {
+    try {
+      window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(attempt))
+      return
+    } catch {
+      // Eight citations an answer, each carrying its episode's chapters, can
+      // fill the quota. Drop the oldest exchange and try once more.
+      if (attempt.length <= 2) break
+      attempt = attempt.slice(2)
+    }
+  }
+  // Saving is a convenience. Failing to save must never cost the conversation
+  // that is on screen.
+}
+
+function loadConversation(): Message[] {
+  try {
+    const raw = window.sessionStorage.getItem(STORAGE_KEY)
+    const parsed = raw ? JSON.parse(raw) : null
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter((item) => item && (item.role === 'user' || item.role === 'assistant') && typeof item.text === 'string')
+  } catch {
+    return []
+  }
+}
+
 /** Parses the `event:`/`data:` pairs of an SSE body into objects.
  *  Events are separated by a blank line, so the buffer is split on that. */
 async function* readEvents(body: ReadableStream<Uint8Array>) {
@@ -63,7 +100,15 @@ async function* readEvents(body: ReadableStream<Uint8Array>) {
     }
   }
 }
-type AssistantContextValue = { open: () => void; close: () => void; isOpen: boolean }
+type AssistantContextValue = {
+  open: () => void
+  close: () => void
+  isOpen: boolean
+  /** Send a question straight through, opening the drawer with it. Lets other
+   *  parts of the site hand a question over without repeating the submit path
+   *  — see components/ArchiveSearchTabs.tsx. */
+  ask: (question: string) => void
+}
 
 const AssistantContext = createContext<AssistantContextValue | null>(null)
 
@@ -191,6 +236,7 @@ export function ArchiveAssistantProvider({ children }: { children: ReactNode }) 
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
   const [modelInfo, setModelInfo] = useState<ModelInfo | null>(null)
+  const [hydrated, setHydrated] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const openerRef = useRef<HTMLElement | null>(null)
   const messagesRef = useRef<HTMLDivElement>(null)
@@ -229,6 +275,25 @@ export function ArchiveAssistantProvider({ children }: { children: ReactNode }) 
     window.addEventListener('ui:overlay-open', onOverlay)
     return () => window.removeEventListener('ui:overlay-open', onOverlay)
   }, [])
+
+  // Read after mounting, never while rendering: storage the server cannot see
+  // would make the first client render disagree with the HTML it replaces.
+  useEffect(() => {
+    const stored = loadConversation()
+    if (stored.length) setMessages(stored)
+    setHydrated(true)
+  }, [])
+
+  useEffect(() => {
+    // Not before the read above has happened, or an empty initial state would
+    // overwrite a conversation that is still on disk.
+    if (!hydrated) return
+    // And not while an answer is arriving: `messages` changes on every token,
+    // so saving here would serialise the whole conversation — citations,
+    // chapters and all — several hundred times per answer.
+    if (messages.some((message) => message.streaming)) return
+    saveConversation(messages)
+  }, [hydrated, messages])
 
   // Follow the answer as it is written, unless the reader has scrolled up to
   // re-read something.
@@ -303,8 +368,33 @@ export function ArchiveAssistantProvider({ children }: { children: ReactNode }) 
   }
 
   return (
-    <AssistantContext.Provider value={{ open, close, isOpen }}>
+    <AssistantContext.Provider value={{
+        open,
+        close,
+        isOpen,
+        // Opens as it sends: a question handed over from elsewhere would
+        // otherwise be answered behind a closed drawer.
+        ask: (question) => {
+          open()
+          void ask(question)
+        },
+      }}>
       {children}
+      {/* The way back. The drawer is dismissed by every other panel that opens
+          — the menu, the chapters, the expanded player — and the conversation
+          survives in state, so without this it would be alive and unreachable
+          from every page that has no "Ask the archive" button of its own. */}
+      <button
+        aria-label={messages.length ? 'Reopen the archive assistant, conversation in progress' : 'Ask the archive'}
+        className="assistant-bubble"
+        hidden={isOpen}
+        onClick={open}
+        title="Ask the archive"
+        type="button"
+      >
+        <Bot aria-hidden="true" size={22} />
+        {messages.length ? <span className="assistant-bubble-dot" /> : null}
+      </button>
       <div className={`assistant-scrim${isOpen ? ' is-open' : ''}`} aria-hidden="true" onClick={close} />
       <aside className={`assistant-drawer${isOpen ? ' is-open' : ''}`} role="dialog" aria-modal="true" aria-label="Archive assistant" aria-hidden={!isOpen}>
         <header>
@@ -358,6 +448,3 @@ export function ArchiveAssistantProvider({ children }: { children: ReactNode }) 
     </AssistantContext.Provider>
   )
 }
-
-// Kept as a no-op compatibility export for older imports during the transition.
-export function Chatbot() { return null }
