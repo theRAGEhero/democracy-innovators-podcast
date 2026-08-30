@@ -8,6 +8,7 @@ import { createClient } from '@libsql/client'
 import { normalizeChapters } from '../src/lib/chapters'
 import { fetchCastopodFeed, findCastopodEpisode, type CastopodFeedEpisode } from './lib/castopod-feed'
 import { scanSrtFolders, subjectFromFolder, NEXTCLOUD_ROOT, SUBDIRS } from './lib/nextcloud-srt'
+import { audioKey } from './lib/deepgram-source'
 
 // What every episode has, and what it is missing.
 //
@@ -53,10 +54,6 @@ type Row = {
   hasSrt: boolean
 }
 
-function normalizeTitle(value: string) {
-  return value.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
-}
-
 function slugifyFolder(value: string) {
   return value.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase()
     .replace(/[^a-z0-9]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '')
@@ -82,20 +79,25 @@ function deepgramFolders(): string[] | null {
 }
 
 /**
- * Episode titles that RSS-Analysis has transcribed with diarisation.
+ * The audio files RSS-Analysis has transcribed with diarisation.
  *
- * Through the sqlite3 command line with -readonly rather than the client this
- * repo uses elsewhere: that one has no read-only mode, and this is another
- * project's database. The flag makes the guarantee the client cannot.
+ * Keyed on the mp3 name rather than the title, which is what the two archives
+ * genuinely share. Titles do not: the three Italian episodes are filed there
+ * under Italian titles and here under English ones, so matching by title
+ * dropped them from the count without saying so.
+ *
+ * Read with sqlite3 -readonly, not the client used elsewhere in this repo: that
+ * one has no read-only mode, and this is another project's database.
  */
-function diarisedTitles(): string[] | null {
+function diarisedAudioKeys(): Set<string> | null {
   if (!fs.existsSync(RSS_ANALYSIS_DB)) return null
-  const query = "SELECT e.title FROM episodes e JOIN transcripts t ON t.episode_id = e.id "
+  const query = "SELECT e.audio_url FROM episodes e JOIN transcripts t ON t.episode_id = e.id "
     + "JOIN podcasts p ON p.id = e.podcast_id "
-    + "WHERE p.name = 'Democracy Innovators' AND t.diarization IS NOT NULL"
+    + "WHERE p.rss_url LIKE '%democracyinnovators%' AND t.diarization IS NOT NULL"
   try {
     const output = execFileSync('sqlite3', ['-readonly', RSS_ANALYSIS_DB, query], { encoding: 'utf8', maxBuffer: 4 << 20 })
-    return output.split('\n').map((line) => line.trim()).filter(Boolean)
+    const keys = output.split('\n').map((line) => audioKey(line.trim())).filter((key): key is string => Boolean(key))
+    return new Set(keys)
   } catch {
     // No sqlite3, no database, or no read access: the column simply reads "?".
     return null
@@ -179,7 +181,7 @@ async function main() {
   const feed: CastopodFeedEpisode[] = await fetchCastopodFeed().catch(() => [])
   const srtFolders = fs.existsSync(NEXTCLOUD_ROOT) ? scanSrtFolders() : null
   const dgFolders = deepgramFolders()
-  const diarised = diarisedTitles()
+  const diarised = diarisedAudioKeys()
 
   const result = await db.execute(`
     SELECT e.id, e.title, e.slug, e.published_at, e.html, e.audio_url, e.square_cover_url,
@@ -193,7 +195,12 @@ async function main() {
     FROM episodes e ORDER BY e.published_at DESC`)
 
   const rows: Row[] = result.rows.map((row) => {
-    const episode = { slug: String(row.slug || ''), title: String(row.title || ''), html: String(row.html || '') }
+    const episode = {
+      slug: String(row.slug || ''),
+      title: String(row.title || ''),
+      html: String(row.html || ''),
+      audioUrl: String(row.audio_url || ''),
+    }
     const chapters = normalizeChapters(typeof row.chapters === 'string' && row.chapters ? JSON.parse(row.chapters) : [])
     const match = findCastopodEpisode(episode, feed)
 
@@ -206,11 +213,7 @@ async function main() {
       : folder?.srt ? 'NC' : match?.item.transcriptUrl ? 'feed' : '—'
 
     const hasLocalDeepgram = dgFolders?.some((subject) => episode.title.toLowerCase().includes(subject.toLowerCase()))
-    const hasDiarised = diarised?.some((title) => {
-      const a = normalizeTitle(title)
-      const b = normalizeTitle(episode.title)
-      return a === b || a.slice(0, 44) === b.slice(0, 44)
-    })
+    const hasDiarised = diarised?.has(audioKey(episode.audioUrl) || '')
     const deepgram = dgFolders === null && diarised === null
       ? '?'
       : hasLocalDeepgram ? 'NC' : hasDiarised ? 'RSS' : '—'

@@ -5,6 +5,7 @@ import { createClient } from '@libsql/client'
 
 import { normalizeChapters } from '../src/lib/chapters'
 import { computeAnchors, htmlToText, parseSrt, type AnchorMethod, type Cue } from './lib/chapter-anchors'
+import { audioKey, loadDeepgramEpisodes } from './lib/deepgram-source'
 import { fetchCastopodFeed, findCastopodEpisode } from './lib/castopod-feed'
 import { FOLDER_ALIASES, scanSrtFolders } from './lib/nextcloud-srt'
 
@@ -44,9 +45,12 @@ async function main() {
 
   const [feed, result] = await Promise.all([
     fetchCastopodFeed(),
-    db.execute("SELECT id, title, slug, html, chapters, transcript_text AS transcriptText FROM episodes WHERE _status = 'published'"),
+    db.execute("SELECT id, title, slug, html, chapters, audio_url AS audioUrl, transcript_text AS transcriptText FROM episodes WHERE _status = 'published'"),
   ])
   const folders = scanSrtFolders().filter((folder) => folder.srt)
+  // Read once for the whole run, not per episode: it is a single query against
+  // another project's database and takes half a minute.
+  const deepgram = loadDeepgramEpisodes()
 
   const counts: Record<AnchorMethod | 'skipped' | 'nochapters', number> = { inline: 0, srt: 0, none: 0, skipped: 0, nochapters: 0 }
   let updated = 0
@@ -57,6 +61,7 @@ async function main() {
       title: String(row.title || ''),
       slug: String(row.slug || ''),
       html: String(row.html || ''),
+      audioUrl: String(row.audioUrl || ''),
       transcriptText: String(row.transcriptText || ''),
     }
     const existing = normalizeChapters(typeof row.chapters === 'string' && row.chapters ? JSON.parse(row.chapters) : [])
@@ -109,7 +114,29 @@ async function main() {
     }
 
     const rawText = htmlToText(episode.html || episode.transcriptText)
-    const computed = computeAnchors(chapters, rawText, cues)
+    let computed = computeAnchors(chapters, rawText, cues)
+
+    // Deepgram's utterances are cues too, and for episodes whose SRT is missing
+    // or does not match the published text they are the only ones that land:
+    // Bruce Schneier went from no anchors at all to fourteen of fifteen.
+    //
+    // Tried alongside rather than instead. Measured over the archive, replacing
+    // the SRT everywhere *loses* anchors on eleven episodes — Deepgram splits
+    // speech differently, and where the SRT already works it works better — so
+    // whichever finds more keeps the episode.
+    const spoken = deepgram?.get(audioKey(episode.audioUrl) || '')
+    if (spoken) {
+      const alternative = computeAnchors(
+        chapters,
+        rawText,
+        spoken.utterances.map((utterance) => ({ sec: utterance.start, text: utterance.text })),
+      )
+      if (alternative.anchored > computed.anchored) {
+        computed = alternative
+        source = source ? `${source}→deepgram` : 'deepgram'
+      }
+    }
+
     counts[computed.method] += 1
     if (!computed.anchored) {
       console.log(`NO ANCHOR ${episode.title.slice(0, 58)} (${computed.method}${source ? `/${source}` : ''})`)
