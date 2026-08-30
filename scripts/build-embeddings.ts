@@ -1,10 +1,23 @@
 import 'dotenv/config'
 
+import fs from 'node:fs'
+import path from 'node:path'
+
 import config from '@payload-config'
 import { getPayload } from 'payload'
 
 import type { Episode } from '@/payload-types'
-import { chunkHash, chunkTranscript, documentEmbeddingInput, EMBEDDING_DIMENSION, EMBEDDING_MODEL, embedText } from '@/lib/archive-rag'
+import {
+  chunkHash,
+  chunkTranscript,
+  chunkTurns,
+  documentEmbeddingInput,
+  EMBEDDING_DIMENSION,
+  EMBEDDING_MODEL,
+  embedText,
+  type Turn,
+  type TurnChunk,
+} from '@/lib/archive-rag'
 import { isRateLimitError, recordApiLimit } from '@/lib/api-limits'
 
 // Gemini's free embedding tier caps requests per minute, so pace the calls and
@@ -13,6 +26,35 @@ const REQUEST_DELAY_MS = Number(process.env.GEMINI_EMBEDDING_DELAY_MS || 800)
 const MAX_EPISODES = Number(process.env.EMBEDDINGS_MAX_EPISODES || 1000)
 const RATE_LIMIT_RETRIES = Number(process.env.GEMINI_EMBEDDING_RETRIES || 5)
 const RATE_LIMIT_BACKOFF_MS = Number(process.env.GEMINI_EMBEDDING_BACKOFF_MS || 30_000)
+
+/** Where import-deepgram.ts leaves the timed turns. */
+const TURNS_DIR = 'runtime/deepgram'
+
+type Passage = Partial<TurnChunk> & { text: string; sourceType: 'transcript' | 'deepgram' }
+
+/**
+ * The passages to index for one episode.
+ *
+ * Deepgram's turns when they exist, which is all 61 episodes with audio: those
+ * cut on changes of speaker and carry the seconds they were said. The old fixed
+ * window survives only as the fallback for an episode with a transcript and no
+ * audio, where there is nothing to line the text up against.
+ */
+function passagesFor(slug: string, transcript: string): Passage[] {
+  const file = path.join(TURNS_DIR, `${slug}.json`)
+  if (fs.existsSync(file)) {
+    try {
+      const record = JSON.parse(fs.readFileSync(file, 'utf8')) as { turns?: Turn[] }
+      const turns = record.turns || []
+      if (turns.length) {
+        return chunkTurns(turns).map((chunk) => ({ ...chunk, sourceType: 'deepgram' as const }))
+      }
+    } catch {
+      // A damaged cache file should not stop the build; the window still works.
+    }
+  }
+  return chunkTranscript(transcript).map((text) => ({ text, sourceType: 'transcript' as const }))
+}
 
 type ExistingChunk = {
   id: number | string
@@ -80,9 +122,11 @@ async function main() {
     const transcript = episode.transcriptText?.trim()
     if (!transcript) continue
 
-    const chunks = chunkTranscript(transcript)
+    const chunks = passagesFor(String(episode.slug || ''), transcript)
     const desiredHashes = new Set(
-      chunks.map((text, chunkIndex) => chunkHash({ episodeId: episode.id, chunkIndex, model: EMBEDDING_MODEL, text })),
+      chunks.map((chunk, chunkIndex) =>
+        chunkHash({ episodeId: episode.id, chunkIndex, model: EMBEDDING_MODEL, text: chunk.text }),
+      ),
     )
 
     const existing = await payload.find({
@@ -102,15 +146,15 @@ async function main() {
       removed += 1
     }
 
-    for (const [chunkIndex, text] of chunks.entries()) {
-      const textHash = chunkHash({ episodeId: episode.id, chunkIndex, model: EMBEDDING_MODEL, text })
+    for (const [chunkIndex, chunk] of chunks.entries()) {
+      const textHash = chunkHash({ episodeId: episode.id, chunkIndex, model: EMBEDDING_MODEL, text: chunk.text })
       if (existingHashes.has(textHash)) {
         skipped += 1
         continue
       }
 
       const embedding = await embedWithRetry(
-        documentEmbeddingInput(episode.title, text),
+        documentEmbeddingInput(episode.title, chunk.text, chunk.speakerName),
         (message) => payload.logger.warn(message),
       )
 
@@ -120,10 +164,14 @@ async function main() {
           episode: episode.id,
           episodeTitle: episode.title,
           episodeSlug: episode.slug,
-          sourceType: 'transcript',
+          sourceType: chunk.sourceType,
           chunkIndex,
-          text,
+          text: chunk.text,
           textHash,
+          startTime: chunk.startTime,
+          endTime: chunk.endTime,
+          speakerName: chunk.speakerName,
+          timeline: chunk.timeline,
           embeddingModel: EMBEDDING_MODEL,
           embeddingDimension: embedding.length,
           embedding,

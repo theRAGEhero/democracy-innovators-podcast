@@ -1,7 +1,7 @@
 import { isRateLimitError, recordApiLimit } from '@/lib/api-limits'
 import { activeModel, activeProvider, isConfigured, streamAnswer } from '@/lib/chat-provider'
 import { SYSTEM_PROMPT, buildUserTurn, looksLikePromptLeak, sanitizeHistory } from '@/lib/chat-prompt'
-import { describeCitation, loadCitedEpisodes, locateChunk, turnBoundedQuote } from '@/lib/citation-context'
+import { chapterForTime, describeCitation, loadCitedEpisodes, locateChunk, turnBoundedQuote } from '@/lib/citation-context'
 import {
   EMBEDDING_MODEL,
   MIN_RETRIEVAL_SCORE,
@@ -13,7 +13,9 @@ import {
   queryTerms,
   scoreChunks,
   selectEvidenceChunks,
+  timeForOffset,
 } from '@/lib/archive-rag'
+import { chapterAnchorId } from '@/lib/chapters'
 
 const WINDOW_MS = 60_000
 const MAX_REQUESTS = 10
@@ -104,11 +106,45 @@ export async function POST(request: Request) {
     // raw text still has its line breaks, so mixing the two put the offsets in
     // the wrong place and attributed quotes to whoever happened to be nearby.
     const { snippet, matchAt, clean } = locateEvidenceSnippet(chunk.text, terms)
-    // Prefer the quote cut to its own turn: it is the only version that can
-    // carry a name honestly. Where the turn is too short to quote, the wider
-    // passage is still shown, but anonymously.
-    // Attribute against the whole transcript where we can find the chunk in it:
-    // the cue naming the speaker is often in the chunk before this one.
+
+    // A passage cut from Deepgram's turns already knows when it was said and by
+    // whom, so the answer is a lookup rather than a reconstruction: no hunting
+    // for the chunk inside the transcript, no regex over speaker cues written
+    // into the prose, no distance threshold deciding whether to trust the name.
+    // The timeline resolves both at the offset where the answer actually is.
+    const timed = chunk.timeline ? timeForOffset(chunk.timeline, matchAt) : null
+    if (timed) {
+      const chapter = chapterForTime(episode?.chapters || [], timed.seconds)
+      return {
+        label: `S${index + 1}`,
+        title: chunk.episodeTitle,
+        url: `/episode/${chunk.episodeSlug}`,
+        snippet: turnBoundedQuote(clean, matchAt) ?? snippet,
+        score: Number(chunk.score.toFixed(4)),
+        startTime: timed.seconds,
+        speaker: timed.speaker ?? undefined,
+        chapter: chapter
+          ? {
+              id: chapterAnchorId(chapter.index, chapter.chapter.title),
+              title: chapter.chapter.title,
+              startTime: chapter.chapter.startTime,
+            }
+          : undefined,
+        episode: episode?.audioUrl
+          ? {
+              id: episode.id,
+              slug: episode.slug,
+              title: episode.title,
+              audioUrl: episode.audioUrl,
+              coverUrl: episode.coverUrl,
+              chapters: episode.chapters,
+            }
+          : undefined,
+      }
+    }
+
+    // Without a timeline — an episode with a transcript but no audio to line it
+    // up against — the old reconstruction is still the best available.
     const absolute = episode?.transcript ? locateChunk(episode.transcript, clean, matchAt) : null
     const source = absolute === null ? clean : episode!.transcript
     const offset = absolute ?? matchAt

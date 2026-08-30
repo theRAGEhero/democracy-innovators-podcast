@@ -317,9 +317,33 @@ export interface ArchiveChunk {
   episode: number | Episode;
   episodeTitle: string;
   episodeSlug: string;
-  sourceType: 'transcript';
+  /**
+   * transcript: a fixed window cut from the published text, with no link to the audio. deepgram: cut on turns of speech, carrying the seconds it was said.
+   */
+  sourceType: 'transcript' | 'deepgram';
   chunkIndex: number;
   text: string;
+  /**
+   * Seconds into the episode where this passage begins.
+   */
+  startTime?: number | null;
+  endTime?: number | null;
+  /**
+   * Set only when the whole passage is one voice. A passage holding a question and its answer has two, and naming it would credit the quote to the wrong person — the timeline answers per offset instead.
+   */
+  speakerName?: string | null;
+  /**
+   * [offset in text, seconds, speaker] per turn. Turns the place a quote was found into the second it was said.
+   */
+  timeline?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   textHash: string;
   embeddingModel: string;
   embeddingDimension: number;
@@ -1425,6 +1449,10 @@ export interface ArchiveChunksSelect<T extends boolean = true> {
   sourceType?: T;
   chunkIndex?: T;
   text?: T;
+  startTime?: T;
+  endTime?: T;
+  speakerName?: T;
+  timeline?: T;
   textHash?: T;
   embeddingModel?: T;
   embeddingDimension?: T;

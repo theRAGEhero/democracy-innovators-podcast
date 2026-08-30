@@ -11,18 +11,34 @@ import { clearChunkCache, loadEmbeddedChunks } from '@/lib/archive-rag'
 let dir: string
 let url: string
 
-async function seed(rows: { id: number; model: string; vector: number[]; text?: string; updated?: string }[]) {
+type SeedRow = {
+  id: number
+  model: string
+  vector: number[]
+  text?: string
+  updated?: string
+  /** The timing a Deepgram-cut passage carries; absent for a legacy chunk. */
+  startTime?: number
+  speakerName?: string
+  timeline?: [number, number, string | null][]
+}
+
+async function seed(rows: SeedRow[]) {
   const db = createClient({ url })
   await db.execute(`CREATE TABLE IF NOT EXISTS archive_chunks (
     id integer PRIMARY KEY, episode_id integer, episode_title text, episode_slug text,
-    chunk_index integer, text text, embedding text, embedding_model text, updated_at text)`)
+    chunk_index integer, text text, embedding text, embedding_model text, updated_at text,
+    start_time numeric, end_time numeric, speaker_name text, timeline text)`)
   for (const row of rows) {
     await db.execute({
       sql: `INSERT OR REPLACE INTO archive_chunks
-            (id, episode_id, episode_title, episode_slug, chunk_index, text, embedding, embedding_model, updated_at)
-            VALUES (?,?,?,?,?,?,?,?,?)`,
+            (id, episode_id, episode_title, episode_slug, chunk_index, text, embedding, embedding_model, updated_at,
+             start_time, speaker_name, timeline)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
       args: [row.id, 1, 'An episode', 'an-episode', row.id, row.text ?? 'some text',
-             JSON.stringify(row.vector), row.model, row.updated ?? '2026-01-01T00:00:00.000Z'],
+             JSON.stringify(row.vector), row.model, row.updated ?? '2026-01-01T00:00:00.000Z',
+             row.startTime ?? null, row.speakerName ?? null,
+             row.timeline ? JSON.stringify(row.timeline) : null],
     })
   }
   db.close()
@@ -40,6 +56,31 @@ describe('embedded chunk loading', () => {
     clearChunkCache()
     vi.unstubAllEnvs()
     rmSync(dir, { recursive: true, force: true })
+  })
+
+  it('carries the timing of a passage cut from turns of speech', async () => {
+    await seed([{
+      id: 1,
+      model: 'model-a',
+      vector: [0.1, 0.2],
+      startTime: 926.5,
+      speakerName: 'Margo Loor',
+      timeline: [[0, 926.5, 'Margo Loor'], [180, 967.2, 'Alessandro Oppo']],
+    }])
+    const [chunk] = await loadEmbeddedChunks('model-a')
+    expect(chunk.startTime).toBe(926.5)
+    expect(chunk.speakerName).toBe('Margo Loor')
+    // Stored as JSON text, and useless to the caller unless it comes back
+    // parsed: this is what turns an offset into a second.
+    expect(chunk.timeline).toEqual([[0, 926.5, 'Margo Loor'], [180, 967.2, 'Alessandro Oppo']])
+  })
+
+  it('leaves a legacy chunk without timing rather than inventing any', async () => {
+    await seed([{ id: 1, model: 'model-a', vector: [0.1, 0.2] }])
+    const [chunk] = await loadEmbeddedChunks('model-a')
+    expect(chunk.startTime).toBeNull()
+    expect(chunk.speakerName).toBeNull()
+    expect(chunk.timeline).toBeNull()
   })
 
   it('returns the stored vectors, already parsed', async () => {

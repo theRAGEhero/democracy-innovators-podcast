@@ -16,6 +16,12 @@ export type EmbeddedChunk = {
   episodeSlug: string
   chunkIndex: number
   text: string
+  /** Present on passages cut from Deepgram's turns: the seconds this one spans,
+   *  the voice when there is only one, and the per-turn map that resolves both
+   *  for any offset inside the text. */
+  startTime?: number | null
+  speakerName?: string | null
+  timeline?: [number, number, string | null][] | null
   /** The stored JSON, when the chunk came from Payload. Chunks from
    *  loadEmbeddedChunks() arrive parsed and carry `vector` instead. */
   embedding?: unknown
@@ -35,6 +41,133 @@ export function normalizeText(value = '') {
 
 export function wordsFor(value: string) {
   return normalizeText(value).match(/\S+/g) || []
+}
+
+/** One person speaking without interruption, with the seconds it occupies. */
+export type Turn = { start: number; end: number; speaker: string | null; text: string }
+
+/** A passage the assistant can search, quote and play. */
+export type TurnChunk = {
+  text: string
+  startTime: number
+  endTime: number
+  /** Set only when the whole passage is one voice; otherwise the timeline
+   *  answers per offset, which is what a citation actually needs. */
+  speakerName: string | null
+  /** `[offset in text, seconds, speaker]`, one entry per turn. Turning the
+   *  place a quote was found into the second it was said. */
+  timeline: [number, number, string | null][]
+}
+
+/** Words per passage. Big enough to hold a question and its answer together —
+ *  which is what makes the passage findable — and small enough that its
+ *  embedding is about one thing. */
+const TURN_CHUNK_WORDS = 250
+/** A single turn longer than this is split at its own sentence boundaries: a
+ *  five-minute monologue in one chunk would average away everything in it. */
+const LONG_TURN_WORDS = 400
+
+/**
+ * Cut a timed transcript into passages that respect who is speaking.
+ *
+ * The fixed 560-word window this replaces cut wherever the count ran out —
+ * mid-sentence, mid-thought, mid-answer — and carried no times at all, so the
+ * minute of a citation had to be guessed from speaker cues written into the
+ * prose, which only 32 of 61 episodes have.
+ *
+ * Here the boundaries come from the conversation: turns are never split unless
+ * they are long enough to be a monologue, and each passage carries the seconds
+ * it spans. One turn of overlap keeps a thought that straddles a boundary
+ * findable from either side.
+ */
+export function chunkTurns(
+  turns: Turn[],
+  maxWords = TURN_CHUNK_WORDS,
+  longTurnWords = LONG_TURN_WORDS,
+): TurnChunk[] {
+  const prepared: Turn[] = []
+  for (const turn of turns) {
+    const text = normalizeText(turn.text)
+    if (!text) continue
+    const words = text.split(' ')
+    if (words.length <= longTurnWords) {
+      prepared.push({ ...turn, text })
+      continue
+    }
+    // Split a monologue on sentence ends, apportioning the time by position.
+    // The seconds are interpolated rather than exact, but within one unbroken
+    // turn that is the only signal there is, and it stays inside the turn.
+    const sentences = text.split(/(?<=[.!?])\s+/)
+    const span = turn.end - turn.start
+    let taken: string[] = []
+    let consumed = 0
+    const flush = () => {
+      if (!taken.length) return
+      const body = taken.join(' ')
+      const from = turn.start + (consumed / words.length) * span
+      consumed += body.split(' ').length
+      const to = turn.start + (consumed / words.length) * span
+      prepared.push({ start: from, end: to, speaker: turn.speaker, text: body })
+      taken = []
+    }
+    for (const sentence of sentences) {
+      taken.push(sentence)
+      if (taken.join(' ').split(' ').length >= maxWords) flush()
+    }
+    flush()
+  }
+
+  const chunks: TurnChunk[] = []
+  let index = 0
+  while (index < prepared.length) {
+    const parts: Turn[] = []
+    let words = 0
+    while (index < prepared.length && (!parts.length || words < maxWords)) {
+      parts.push(prepared[index])
+      words += prepared[index].text.split(' ').length
+      index += 1
+    }
+
+    const timeline: [number, number, string | null][] = []
+    let offset = 0
+    const pieces: string[] = []
+    for (const part of parts) {
+      timeline.push([offset, part.start, part.speaker])
+      pieces.push(part.text)
+      offset += part.text.length + 1
+    }
+    const voices = new Set(parts.map((part) => part.speaker))
+    chunks.push({
+      text: pieces.join(' '),
+      startTime: parts[0].start,
+      endTime: parts[parts.length - 1].end,
+      speakerName: voices.size === 1 ? parts[0].speaker : null,
+      timeline,
+    })
+
+    // One turn of overlap, unless that would stall on a single long turn.
+    if (index < prepared.length && parts.length > 1) index -= 1
+  }
+  return chunks
+}
+
+/**
+ * The second a passage was spoken, for an offset inside its text.
+ *
+ * The timeline is ordered, so the governing entry is the last one at or before
+ * the offset — the same reasoning as the speaker cues it replaces, except that
+ * these times come from the audio rather than from prose.
+ */
+export function timeForOffset(
+  timeline: [number, number, string | null][],
+  offset: number,
+): { seconds: number; speaker: string | null } | null {
+  let found: [number, number, string | null] | null = null
+  for (const entry of timeline) {
+    if (entry[0] <= offset) found = entry
+    else break
+  }
+  return found ? { seconds: found[1], speaker: found[2] } : null
 }
 
 export function chunkTranscript(transcript: string, maxWords = MAX_WORDS, overlapWords = OVERLAP_WORDS) {
@@ -58,8 +191,12 @@ export function chunkHash(input: { episodeId: number | string; chunkIndex: numbe
     .digest('hex')
 }
 
-export function documentEmbeddingInput(title: string, text: string) {
-  return `title: ${title || 'none'} | text: ${normalizeText(text)}`
+/** The speaker is named when the passage has only one, because half the
+ *  questions asked of this archive are about who said something rather than
+ *  what was said. */
+export function documentEmbeddingInput(title: string, text: string, speaker?: string | null) {
+  const who = speaker ? ` | speaker: ${speaker}` : ''
+  return `title: ${title || 'none'}${who} | text: ${normalizeText(text)}`
 }
 
 export function questionEmbeddingInput(question: string) {
@@ -100,6 +237,7 @@ export async function embedText(input: string, options: { apiKey?: string; model
 // The cache lives in the process: with more than one instance each would hold
 // its own copy, which is fine at this size but worth knowing.
 type LoadedChunk = Required<Pick<EmbeddedChunk, 'id' | 'episodeId' | 'episodeTitle' | 'episodeSlug' | 'chunkIndex' | 'text' | 'vector'>>
+  & Pick<EmbeddedChunk, 'startTime' | 'speakerName' | 'timeline'>
 
 let chunkCache: { key: string; chunks: LoadedChunk[] } | null = null
 
@@ -131,7 +269,8 @@ export async function loadEmbeddedChunks(model = EMBEDDING_MODEL): Promise<Loade
   // The model filter is not optional: vectors from different models live in
   // the same table and comparing across them yields plausible nonsense.
   const result = await connection.execute({
-    sql: `SELECT id, episode_id, episode_title, episode_slug, chunk_index, text, embedding
+    sql: `SELECT id, episode_id, episode_title, episode_slug, chunk_index, text, embedding,
+                 start_time, speaker_name, timeline
           FROM archive_chunks WHERE embedding_model = ?`,
     args: [model],
   })
@@ -145,6 +284,9 @@ export async function loadEmbeddedChunks(model = EMBEDDING_MODEL): Promise<Loade
       episodeSlug: String(row.episode_slug || ''),
       chunkIndex: Number(row.chunk_index || 0),
       text: String(row.text || ''),
+      startTime: row.start_time === null || row.start_time === undefined ? null : Number(row.start_time),
+      speakerName: row.speaker_name ? String(row.speaker_name) : null,
+      timeline: parseTimeline(row.timeline),
       vector,
     }]
   })
@@ -156,6 +298,19 @@ export async function loadEmbeddedChunks(model = EMBEDDING_MODEL): Promise<Loade
 export function clearChunkCache() {
   chunkCache = null
   client = null
+}
+
+/** The timeline is stored as JSON text. A malformed one costs the passage its
+ *  precision, not the answer: the caller falls back to the chapter. */
+export function parseTimeline(value: unknown): [number, number, string | null][] | null {
+  if (Array.isArray(value)) return value as [number, number, string | null][]
+  if (typeof value !== 'string' || !value) return null
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) ? (parsed as [number, number, string | null][]) : null
+  } catch {
+    return null
+  }
 }
 
 export function parseEmbedding(value: unknown) {

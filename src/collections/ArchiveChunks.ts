@@ -18,9 +18,41 @@ export const ArchiveChunks: CollectionConfig = {
     { name: 'episode', type: 'relationship', relationTo: 'episodes', required: true, index: true },
     { name: 'episodeTitle', type: 'text', required: true, index: true },
     { name: 'episodeSlug', type: 'text', required: true, index: true },
-    { name: 'sourceType', type: 'select', defaultValue: 'transcript', options: ['transcript'], required: true },
+    {
+      name: 'sourceType',
+      type: 'select',
+      defaultValue: 'transcript',
+      options: ['transcript', 'deepgram'],
+      required: true,
+      admin: {
+        description:
+          'transcript: a fixed window cut from the published text, with no link to the audio. deepgram: cut on turns of speech, carrying the seconds it was said.',
+      },
+    },
     { name: 'chunkIndex', type: 'number', required: true, index: true },
     { name: 'text', type: 'textarea', required: true },
+    {
+      name: 'startTime',
+      type: 'number',
+      admin: { description: 'Seconds into the episode where this passage begins.' },
+    },
+    { name: 'endTime', type: 'number' },
+    {
+      name: 'speakerName',
+      type: 'text',
+      admin: {
+        description:
+          'Set only when the whole passage is one voice. A passage holding a question and its answer has two, and naming it would credit the quote to the wrong person — the timeline answers per offset instead.',
+      },
+    },
+    {
+      name: 'timeline',
+      type: 'json',
+      admin: {
+        description:
+          '[offset in text, seconds, speaker] per turn. Turns the place a quote was found into the second it was said.',
+      },
+    },
     { name: 'textHash', type: 'text', required: true, unique: true, index: true },
     { name: 'embeddingModel', type: 'text', required: true, index: true },
     { name: 'embeddingDimension', type: 'number', required: true },
