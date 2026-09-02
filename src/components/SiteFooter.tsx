@@ -13,8 +13,9 @@ export function SiteFooter() {
       <p>Independent conversations about democracy, governance and civic technology.</p>
       <nav aria-label="Footer navigation">
         <Link href="/episodes">Episodes</Link>
-        <Link href="/people">People</Link>
         <Link href="/topics">Topics</Link>
+        <Link href="/map">Map</Link>
+        <Link href="/about">About</Link>
         <Link href="/search">Search</Link>
         <Link href="/listen">Listen</Link>
         <Link href="/rss.xml">RSS</Link>

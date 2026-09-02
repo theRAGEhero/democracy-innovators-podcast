@@ -3,13 +3,14 @@ import Link from 'next/link'
 import { HeaderNav } from './HeaderNav'
 import { ThemeToggle } from './ThemeToggle'
 
+// The map is a way of reading the topics, not a section of its own, so it sits
+// under Topics rather than beside it. People is still published and still linked
+// from every episode; it just no longer competes for a slot in the top bar.
 const navItems = [
   { href: '/episodes', label: 'Episodes' },
-  { href: '/people', label: 'People' },
-  { href: '/topics', label: 'Topics' },
-  { href: '/map', label: 'Map' },
+  { href: '/topics', label: 'Topics', children: [{ href: '/map', label: 'Map' }] },
   { href: '/listen', label: 'Listen' },
-  { href: '/about', label: 'About', secondary: true },
+  { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact', secondary: true },
 ]
 

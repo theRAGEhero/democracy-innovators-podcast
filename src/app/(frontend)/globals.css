@@ -1826,3 +1826,82 @@ body[data-player-active] .assistant-bubble { bottom: calc(var(--player-h) + 28px
   .action-sheet { display: grid; grid-template-rows: auto 1fr; }
   .episode-page, .home-page { padding-bottom: calc(92px + env(safe-area-inset-bottom)); }
 }
+
+/* ---------- Nested navigation: Map lives under Topics ---------- */
+/* On desktop the child sits in a small panel opened from a chevron. On the
+   mobile sheet the group dissolves (display: contents) so parent and child are
+   ordinary full-width rows again — a floating panel inside a full-screen menu
+   would have nothing to float over, and the anchor must stay the flex item for
+   its full-width bottom rule to draw. */
+.site-nav-group { position: relative; display: inline-flex; align-items: center; gap: 5px; }
+.site-nav-disclosure {
+  display: inline-flex; align-items: center; padding: 2px; border: 0;
+  background: none; color: inherit; cursor: pointer;
+}
+.site-nav-disclosure:hover { color: var(--terracotta); }
+.site-nav-disclosure svg { transition: transform var(--dur-fast) var(--ease); }
+.site-nav-group.is-open .site-nav-disclosure svg { transform: rotate(180deg); }
+.site-nav-submenu { display: none; }
+.site-nav-group.is-open .site-nav-submenu {
+  position: absolute; top: calc(100% + 12px); left: -14px; z-index: var(--z-header);
+  display: flex; flex-direction: column; min-width: 148px; padding: 2px 14px;
+  background: var(--paper-light); border: 1px solid var(--rule);
+  box-shadow: var(--shadow-panel);
+}
+.site-nav-group.is-open .site-nav-submenu a { padding: 12px 0; }
+
+@media (max-width: 900px) {
+  .site-nav-group, .site-nav-submenu, .site-nav-group.is-open .site-nav-submenu { display: contents; }
+  .site-nav-disclosure { display: none; }
+  .site-nav .site-nav-submenu a { padding-left: 20px; }
+}
+
+/* ---------- About: the two editors, and where else to find them ---------- */
+.about-people { padding: 80px 0; border-bottom: 1px solid var(--rule); }
+.editor-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 70px; margin-top: 32px; }
+.editor-card { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 30px; align-items: start; }
+.editor-portrait {
+  position: relative; overflow: hidden; aspect-ratio: 1; width: 100%;
+  display: grid; place-items: center;
+  background: var(--blue); border: 1px solid var(--rule);
+}
+.editor-portrait img { width: 100%; height: 100%; object-fit: cover; }
+/* Until a photograph exists, a monogram plate — never a broken image frame. */
+.editor-portrait span {
+  color: var(--on-accent); font: 400 3.4rem/1 var(--serif); letter-spacing: -.03em;
+}
+.editor-body h3 { margin: 0; font: 400 1.9rem/1.15 var(--serif); letter-spacing: -.03em; }
+.editor-role { margin: 8px 0 16px; color: var(--muted); font: 500 .72rem/1 var(--sans); letter-spacing: .1em; text-transform: uppercase; }
+.editor-body p { font-size: 1.02rem; line-height: 1.65; }
+.editor-body .entity-links { margin-top: 18px; }
+
+.about-elsewhere { padding: 75px 0; border-bottom: 1px solid var(--rule); }
+.blog-card {
+  display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 40px; align-items: center;
+  margin-top: 28px; padding: 28px; border: 1px solid var(--rule); background: var(--paper-light);
+  text-decoration: none; color: inherit; transition: border-color var(--dur-fast) var(--ease);
+}
+.blog-card:hover { border-color: var(--blue); }
+.blog-card-image {
+  position: relative; overflow: hidden; aspect-ratio: 16 / 10;
+  display: grid; place-items: center; background: var(--terracotta); border: 1px solid var(--rule);
+}
+.blog-card-image img { width: 100%; height: 100%; object-fit: cover; }
+.blog-card-image span { color: var(--on-accent); font: 400 3rem/1 var(--serif); letter-spacing: -.03em; }
+.blog-card-body h3 { margin: 0 0 12px; font: 400 1.7rem/1.15 var(--serif); letter-spacing: -.03em; }
+.blog-card-body p { margin: 0 0 16px; font-size: 1.02rem; line-height: 1.65; }
+.blog-card:hover .text-link { color: var(--terracotta); }
+
+.about-next { padding: 70px 0 40px; }
+.about-next .hero-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 22px; margin-top: 20px; }
+
+@media (max-width: 900px) {
+  .editor-grid { grid-template-columns: 1fr; gap: 44px; }
+  .blog-card { grid-template-columns: 1fr; gap: 26px; }
+}
+@media (max-width: 620px) {
+  .about-people, .about-elsewhere { padding: 52px 0; }
+  .editor-card { grid-template-columns: 120px minmax(0, 1fr); gap: 20px; }
+  .editor-portrait span { font-size: 2.4rem; }
+  .editor-body h3 { font-size: 1.55rem; }
+}
