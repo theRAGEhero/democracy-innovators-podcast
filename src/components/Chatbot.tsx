@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Bot, BookOpen, Check, Eraser, Link2, ListTree, Play, Send, X } from 'lucide-react'
 
 import { formatTimestamp, type Chapter } from '@/lib/chapters'
-import { citationShareText } from '@/lib/citation-share'
+import { citationLink, citationShareText } from '@/lib/citation-share'
 import { getClientSideURL } from '@/lib/getURL'
 import { AnswerText } from './AnswerText'
 import { usePlayer, type PlayerEpisode } from './PlayerProvider'
@@ -164,6 +164,10 @@ function CitationCard({ citation, domId, onNavigate, index }: { citation: Citati
   // Same colour slots the transcript uses, so a source looks the same wherever
   // it appears. Cycled past the fourth, as there.
   const slot = (index % 4) + 1
+  // The link people click and the link they copy pointed at different places:
+  // the copied one carried ?t= and opened at the quoted second, the clicked one
+  // dropped it and opened at zero. One builder now serves both.
+  const deepLink = citationLink(citation, '')
 
   function listen() {
     if (!episode) return
@@ -200,7 +204,7 @@ function CitationCard({ citation, domId, onNavigate, index }: { citation: Citati
         {episode ? (
           <button type="button" onClick={listen}>
             <Play aria-hidden="true" size={13} />
-            {startTime ? `Listen at ${formatTimestamp(startTime)}` : 'Listen'}
+            {startTime === undefined ? 'Listen' : `Listen at ${formatTimestamp(startTime)}`}
           </button>
         ) : null}
         <button
@@ -217,12 +221,12 @@ function CitationCard({ citation, domId, onNavigate, index }: { citation: Citati
           {copied === 'done' ? 'Link copied' : copied === 'failed' ? 'Could not copy the link' : ''}
         </span>
         {chapter ? (
-          <Link href={`${citation.url}#${chapter.id}`} onClick={onNavigate}>
+          <Link href={`${deepLink}#${chapter.id}`} onClick={onNavigate}>
             <ListTree aria-hidden="true" size={13} />
             Chapter
           </Link>
         ) : null}
-        <Link href={citation.url} onClick={onNavigate}>
+        <Link href={deepLink} onClick={onNavigate}>
           <BookOpen aria-hidden="true" size={13} />
           Episode
         </Link>

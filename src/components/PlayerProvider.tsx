@@ -32,6 +32,7 @@ type PlayerContextValue = {
   currentTime: number
   duration: number
   error: boolean
+  blocked: boolean
   chapters: Chapter[]
   currentChapter: number
   previous: PreviousPlay | null
@@ -129,11 +130,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   // having never begun. Remembering that playback was asked for lets the
   // element pick it up again once it is actually ready.
   const wantsPlayRef = useRef(false)
+  /** True between asking for playback and the request settling. Assigning
+   *  currentTime in that window aborts the request, so the seek waits. */
+  const playPendingRef = useRef(false)
   const [episode, setEpisode] = useState<PlayerEpisode | null>(null)
   const [playing, setPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [error, setError] = useState(false)
+  /** The browser refused to play for want of a gesture. Not an error: the
+   *  episode is loaded and sitting at the right moment, one tap away. */
+  const [blocked, setBlocked] = useState(false)
   const [rate, setRate] = useState(1)
   const [expanded, setExpanded] = useState(false)
   const [chaptersOpen, setChaptersOpen] = useState(false)
@@ -155,22 +162,43 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [chapters, currentTime])
 
   /**
-   * Start playback, treating a refusal for want of a user gesture as what it
-   * is: normal. Opening a ?t= link is exactly that case, and showing an error
-   * there would be wrong — the episode is loaded and sitting at the right
-   * moment, a tap away. The intent is dropped too, so `canplay` does not keep
-   * retrying something the browser will keep refusing. Any other refusal is a
-   * real failure and still surfaces.
+   * Start playback, and only then move to the requested position.
+   *
+   * The order matters. Assigning currentTime while a play() is still settling
+   * aborts it, and the gesture that authorised it is spent — the retries from
+   * `loadedmetadata` and `canplay` are media events, not clicks, so a browser
+   * is free to refuse them. That is what made a cited moment open the player
+   * and never play, while the ordinary play button, which never seeks, worked.
+   *
+   * A refusal for want of a gesture is not an error: the episode is loaded and
+   * a tap away, so it is reported as `blocked`, not as a failure. The intent is
+   * dropped too, so `canplay` does not keep retrying what will keep being
+   * refused. Any other rejection is a real failure and still surfaces.
    */
   const startPlayback = useCallback((audio: HTMLAudioElement) => {
     wantsPlayRef.current = true
-    void audio.play().catch((reason: unknown) => {
-      if (reason instanceof DOMException && reason.name === 'NotAllowedError') {
-        wantsPlayRef.current = false
-        return
-      }
-      setError(true)
-    })
+    playPendingRef.current = true
+    void audio
+      .play()
+      .then(() => {
+        playPendingRef.current = false
+        const pending = pendingSeekRef.current
+        if (pending === null) return
+        pendingSeekRef.current = null
+        audio.currentTime = Math.max(0, Math.min(pending, audio.duration || pending))
+        setCurrentTime(audio.currentTime)
+      })
+      .catch((reason: unknown) => {
+        playPendingRef.current = false
+        if (reason instanceof DOMException && reason.name === 'NotAllowedError') {
+          wantsPlayRef.current = false
+          setBlocked(true)
+          // The position is deliberately left pending: `loadedmetadata` still
+          // applies it, so pressing play starts at the cited moment.
+          return
+        }
+        setError(true)
+      })
   }, [])
 
   const seek = useCallback((seconds: number) => {
@@ -196,6 +224,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     const audio = audioRef.current
     if (!audio) return
     setError(false)
+    setBlocked(false)
     if (episode?.id === next.id) {
       if (typeof startAt === 'number') seek(startAt)
       if (audio.paused) startPlayback(audio)
@@ -224,6 +253,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   const toggle = useCallback(() => {
     const audio = audioRef.current
     if (!audio || !episode) return
+    setBlocked(false)
     if (audio.paused) {
       startPlayback(audio)
     } else {
@@ -324,8 +354,8 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
   }, [episode, seek, toggle, skipChapter, skipSeconds])
 
   const value = useMemo(
-    () => ({ episode, playing, currentTime, duration, error, chapters, currentChapter, previous, resumePrevious, playEpisode, toggle, seek, skipSeconds, close }),
-    [episode, playing, currentTime, duration, error, chapters, currentChapter, previous, resumePrevious, playEpisode, toggle, seek, skipSeconds, close],
+    () => ({ episode, playing, currentTime, duration, error, blocked, chapters, currentChapter, previous, resumePrevious, playEpisode, toggle, seek, skipSeconds, close }),
+    [episode, playing, currentTime, duration, error, blocked, chapters, currentChapter, previous, resumePrevious, playEpisode, toggle, seek, skipSeconds, close],
   )
 
   function applyRate(next: number) {
@@ -375,6 +405,9 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
           const audio = event.currentTarget
           // A new source resets playbackRate in some browsers; keep the choice.
           audio.playbackRate = rate
+          // A play() we asked for is still settling; seeking now would abort
+          // it. startPlayback applies the position once playback has begun.
+          if (playPendingRef.current) return
           const pending = pendingSeekRef.current
           pendingSeekRef.current = null
           if (pending === null) return
@@ -391,7 +424,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         onEnded={() => setPlaying(false)}
         onError={() => { setError(true); setPlaying(false) }}
         onPause={() => setPlaying(false)}
-        onPlay={() => { wantsPlayRef.current = false; setPlaying(true); setError(false) }}
+        onPlay={() => { wantsPlayRef.current = false; setPlaying(true); setError(false); setBlocked(false) }}
         onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)}
       />
       {episode ? (
@@ -440,7 +473,17 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
               <ChevronUp aria-hidden="true" />
             </button>
             <button className="player-close" type="button" onClick={close} aria-label="Close player"><X aria-hidden="true" /></button>
-            {error ? <p className="player-error">Audio could not be played. <a href={episode.castopodUrl || 'https://podcast.democracyinnovators.com/@podcast'} target="_blank" rel="noreferrer">Open in Castopod ↗</a></p> : null}
+            {error ? (
+              <p className="player-error">
+                Audio could not be played.{' '}
+                {episode.castopodUrl
+                  ? <a href={episode.castopodUrl} target="_blank" rel="noreferrer">Open in Castopod ↗</a>
+                  : <a href={`/episode/${episode.slug}`}>Open the episode</a>}
+              </p>
+            ) : null}
+            {/* Not a failure: loaded, positioned, and waiting for a tap. Saying
+                nothing here is what made a blocked play look like a dead button. */}
+            {blocked && !error ? <p className="player-blocked" role="status">Ready — press play to start.</p> : null}
             {chapters.length && chaptersOpen ? (
               <nav className="player-chapter-panel" aria-label="Chapters">
                 <div className="player-chapter-panel-bar">

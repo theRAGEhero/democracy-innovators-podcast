@@ -1449,6 +1449,9 @@ body::before {
 .player-close { width: 40px; height: 40px; color: var(--muted); }
 .player-error { grid-column: 1 / -1; margin: -2px 0 2px; color: var(--terracotta); font-size: .75rem; }
 .player-error a { font-weight: 700; }
+/* A refusal to autoplay is information, not a failure — same slot as the error
+   line, but in the muted voice rather than the alarmed one. */
+.player-blocked { grid-column: 1 / -1; margin: -2px 0 2px; color: var(--muted); font-size: .75rem; }
 body[data-player-active] .page-shell { padding-bottom: calc(var(--player-h) + 20px); }
 
 /* ---------- Player: advanced menu ----------
@@ -1660,6 +1663,11 @@ body[data-player-active] .page-shell { padding-bottom: calc(var(--player-h) + 20
   background: var(--terracotta);
 }
 body[data-player-active] .assistant-bubble { bottom: calc(var(--player-h) + 28px); }
+/* The drawer sits above the player (--z-drawer over --z-player), and pressing
+   "Listen" on a citation deliberately leaves it open. Without this the drawer
+   covers the bar it just changed — including the line saying playback was
+   blocked — so the click looked like it did nothing at all. */
+body[data-player-active] .assistant-drawer { bottom: calc(var(--player-h) + env(safe-area-inset-bottom)); }
 
 @media (max-width: 620px) {
   /* Clears the contextual dock, and the player on top of it when both are up. */
@@ -1820,7 +1828,7 @@ body[data-player-active] .assistant-bubble { bottom: calc(var(--player-h) + 28px
   .player-identity strong { font-size: .82rem; }
   .player-timeline { display: none; }
   .player-close { width: 38px; }
-  .player-error { font-size: .7rem; }
+  .player-error, .player-blocked { font-size: .7rem; }
   .assistant-drawer { top: 8vh; width: 100%; border-radius: 18px 18px 0 0; transform: translateY(100%); }
   .assistant-drawer.is-open { transform: translateY(0); }
   .action-sheet { display: grid; grid-template-rows: auto 1fr; }
