@@ -1,11 +1,16 @@
 import config from '@payload-config'
 import { getPayload } from 'payload'
 
+import { isRateLimited } from '@/lib/rate-limit'
+
 // Cookieless visit counter endpoint. Accepts a path, increments an aggregate
 // per-path counter. Deliberately stores nothing that could identify a visitor
 // (no cookies, no IP, no user agent) so it requires no consent. See /privacy.
 
 const MAX_PATH_LENGTH = 512
+// A page counter nobody throttled. It is aggregate and cookieless, so inflation
+// only distorts a vanity number — but it writes to the database on every call.
+const RATE_LIMIT = { scope: 'track', limit: 60, windowMs: 60_000 }
 
 function normalizePath(input: unknown): string | null {
   if (typeof input !== 'string') return null
@@ -19,6 +24,7 @@ function normalizePath(input: unknown): string | null {
 }
 
 export async function POST(request: Request) {
+  if (isRateLimited(request, RATE_LIMIT)) return Response.json({ ok: false }, { status: 429 })
   let body: { path?: unknown }
   try {
     body = await request.json()

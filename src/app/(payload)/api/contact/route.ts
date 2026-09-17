@@ -2,23 +2,10 @@ import config from '@payload-config'
 import { getPayload } from 'payload'
 
 import { sendContactEmail, type ContactMessage } from '@/lib/contact-mail'
+import { isRateLimited } from '@/lib/rate-limit'
 
-const WINDOW_MS = 60_000
-const MAX_REQUESTS = 3
-const requests = new Map<string, { count: number; resetAt: number }>()
+const RATE_LIMIT = { scope: 'contact', limit: 3, windowMs: 60_000 }
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-function isRateLimited(request: Request) {
-  const client = request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',').at(-1)?.trim() || 'unknown'
-  const now = Date.now()
-  const current = requests.get(client)
-  if (!current || current.resetAt <= now) {
-    requests.set(client, { count: 1, resetAt: now + WINDOW_MS })
-    return false
-  }
-  current.count += 1
-  return current.count > MAX_REQUESTS
-}
 
 function clean(value: unknown, maxLength: number) {
   return typeof value === 'string' ? value.trim().replace(/\s+/g, ' ').slice(0, maxLength) : ''
@@ -47,7 +34,7 @@ function validate(body: Record<string, unknown>): ContactMessage | Response {
 }
 
 export async function POST(request: Request) {
-  if (isRateLimited(request)) return Response.json({ error: 'Too many messages. Please wait a minute.' }, { status: 429 })
+  if (isRateLimited(request, RATE_LIMIT)) return Response.json({ error: 'Too many messages. Please wait a minute.' }, { status: 429 })
 
   const body = await request.json().catch(() => ({}))
   const validated = validate(body)

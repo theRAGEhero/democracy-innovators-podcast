@@ -1,14 +1,17 @@
 import type { CollectionConfig } from 'payload'
 
-import { anyone } from '@/access/anyone'
 import { authenticated } from '@/access/authenticated'
+import { authenticatedOrPublished } from '@/access/authenticatedOrPublished'
 
 export const Episodes: CollectionConfig = {
   slug: 'episodes',
   access: {
     create: authenticated,
     delete: authenticated,
-    read: anyone,
+    // Not `anyone`: this collection keeps drafts, and Payload's REST endpoint
+    // hands them to anonymous callers where the site's own queries would not —
+    // lib/content.ts always filters on _status. Pages and Posts already use this.
+    read: authenticatedOrPublished,
     update: authenticated,
   },
   admin: {

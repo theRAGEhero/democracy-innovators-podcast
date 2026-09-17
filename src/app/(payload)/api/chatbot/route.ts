@@ -16,22 +16,9 @@ import {
   timeForOffset,
 } from '@/lib/archive-rag'
 import { chapterAnchorId } from '@/lib/chapters'
+import { isRateLimited } from '@/lib/rate-limit'
 
-const WINDOW_MS = 60_000
-const MAX_REQUESTS = 10
-const requests = new Map<string, { count: number; resetAt: number }>()
-
-function isRateLimited(request: Request) {
-  const client = request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',').at(-1)?.trim() || 'unknown'
-  const now = Date.now()
-  const current = requests.get(client)
-  if (!current || current.resetAt <= now) {
-    requests.set(client, { count: 1, resetAt: now + WINDOW_MS })
-    return false
-  }
-  current.count += 1
-  return current.count > MAX_REQUESTS
-}
+const RATE_LIMIT = { scope: 'chatbot', limit: 10, windowMs: 60_000 }
 
 function evidenceItems(chunks: ReturnType<typeof selectEvidenceChunks>, question: string) {
   const terms = queryTerms(question)
@@ -44,7 +31,7 @@ function evidenceItems(chunks: ReturnType<typeof selectEvidenceChunks>, question
 }
 
 export async function POST(request: Request) {
-  if (isRateLimited(request)) return Response.json({ error: 'Too many questions. Please wait a minute.' }, { status: 429 })
+  if (isRateLimited(request, RATE_LIMIT)) return Response.json({ error: 'Too many questions. Please wait a minute.' }, { status: 429 })
   const body = await request.json().catch(() => ({}))
   const question = typeof body.question === 'string' ? body.question.trim().slice(0, 500) : ''
   if (!question) return Response.json({ error: 'Question is required.' }, { status: 400 })

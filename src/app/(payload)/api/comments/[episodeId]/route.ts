@@ -1,10 +1,10 @@
 import config from '@payload-config'
 import { getPayload } from 'payload'
 import { sendCommentNotification } from '@/lib/contact-mail'
+import { isRateLimited } from '@/lib/rate-limit'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-const attempts = new Map<string, number>()
+const RATE_LIMIT = { scope: 'comments', limit: 1, windowMs: 30_000 }
 
 export async function GET(_request: Request, { params }: { params: Promise<{ episodeId: string }> }) {
   const episodeId = Number((await params).episodeId)
@@ -23,10 +23,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ epi
   const message = typeof body.message === 'string' ? body.message.trim().slice(0, 1200) : ''
   if (!Number.isInteger(episodeId) || !name || message.length < 8) return Response.json({ error: 'Name and a comment of at least 8 characters are required.' }, { status: 400 })
   if (!EMAIL_RE.test(email)) return Response.json({ error: 'A valid email address is required.' }, { status: 400 })
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-  const lastAttempt = attempts.get(ip) || 0
-  if (Date.now() - lastAttempt < 30_000) return Response.json({ error: 'Please wait before submitting another comment.' }, { status: 429 })
-  attempts.set(ip, Date.now())
+  if (isRateLimited(request, RATE_LIMIT)) return Response.json({ error: 'Please wait before submitting another comment.' }, { status: 429 })
   const payload = await getPayload({ config })
   const episode = await payload.findByID({ collection: 'episodes', id: episodeId }).catch(() => null)
   if (!episode) return Response.json({ error: 'Episode not found.' }, { status: 404 })
