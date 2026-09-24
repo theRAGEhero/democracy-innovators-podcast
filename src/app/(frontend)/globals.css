@@ -278,7 +278,7 @@ body::before {
 .feature-copy > p:not(.section-label) { max-width: 580px; color: var(--muted); font-size: 1.1rem; line-height: 1.6; }
 .feature-image { width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; border: 1px solid var(--rule); filter: saturate(.82) contrast(1.02) var(--photo-dim); }
 
-.archive-section, .people-preview { padding: 90px 0; border-bottom: 1px solid var(--rule); }
+.archive-section { padding: 90px 0; border-bottom: 1px solid var(--rule); }
 .section-heading { display: flex; justify-content: space-between; align-items: end; gap: 30px; margin-bottom: 45px; }
 .section-heading h2 { max-width: 760px; margin: 12px 0 0; font-size: clamp(2.5rem, 5vw, 4.6rem); font-weight: 400; letter-spacing: -.045em; line-height: .95; }
 
@@ -912,7 +912,7 @@ body::before {
   .home-hero h1 { font-size: clamp(3.5rem, 18vw, 5.5rem); }
   .hero-actions { align-items: flex-start; flex-direction: column; }
   .featured-story { display: flex; flex-direction: column-reverse; padding: var(--space-6) 0; }
-  .archive-section, .people-preview { padding: 60px 0; }
+  .archive-section { padding: 60px 0; }
   .section-heading { align-items: start; flex-direction: column; }
   .episode-row { grid-template-columns: 34px 1fr; align-items: start; }
   .episode-image-link { grid-column: 2; }

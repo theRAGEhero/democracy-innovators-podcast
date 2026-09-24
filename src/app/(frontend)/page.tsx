@@ -1,6 +1,6 @@
 import { EpisodeRow } from '@/components/EpisodeRow'
 import { MobilePlatformBar } from '@/components/MobilePlatformBar'
-import { getEpisodes, getGuests } from '@/lib/content'
+import { getEpisodes } from '@/lib/content'
 import { getServerSideURL } from '@/lib/getURL'
 import type { Metadata } from 'next'
 import Image from 'next/image'
@@ -14,7 +14,7 @@ export const revalidate = 3600
 export const metadata: Metadata = { alternates: { canonical: '/' } }
 
 export default async function HomePage() {
-  const [{ docs: episodes }, { docs: guests }] = await Promise.all([getEpisodes(7), getGuests(6)])
+  const { docs: episodes } = await getEpisodes(7)
   const featured = episodes[0]
   const origin = getServerSideURL()
   const siteJsonLd = {
@@ -119,26 +119,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <section className="people-preview">
-        <div className="section-heading">
-          <div>
-            <p className="section-label">People</p>
-            <h2>A growing index of democratic innovators</h2>
-          </div>
-          <Link className="text-link" href="/people">Open the directory →</Link>
-        </div>
-        <div className="people-grid">
-          {guests.map((guest) => (
-            <Link className="person-card" href={`/people/${guest.slug}`} key={guest.id}>
-              <span className="person-initials" aria-hidden="true">
-                {guest.name.split(' ').map((part) => part[0]).slice(0, 2).join('')}
-              </span>
-              <strong>{guest.name}</strong>
-              <span>{guest.role || 'Podcast guest'}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
       <MobilePlatformBar latest={featured?.audioUrl ? { id: featured.id, slug: featured.slug, title: featured.title, audioUrl: featured.audioUrl, coverUrl: featured.squareCoverUrl || featured.featureImageUrl, castopodUrl: extractCastopodEpisodeUrl(featured.html), chapters: normalizeChapters(featured.chapters) } : null} />
     </main>
   )
