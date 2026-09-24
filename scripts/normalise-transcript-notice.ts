@@ -21,6 +21,11 @@ const TRANSLATED_NOTICE =
   + 'The original Italian transcription is after the English one.'
 
 const MARKERS = [
+  // The wording this script itself writes has to come first, or it cannot
+  // recognise its own output: every episode it had already fixed looked like
+  // one with no notice at all, and a second run would have added a duplicate
+  // disclaimer to fifty-eight pages.
+  'automatically transcribed',
   'transcript of the conversation',
   'full transcription of the interview',
   'automatic transcription',

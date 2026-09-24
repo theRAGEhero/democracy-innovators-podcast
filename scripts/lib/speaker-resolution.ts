@@ -130,6 +130,19 @@ export function addressedNames(text: string, candidates: string[]): string[] {
  * Order matters: fragments are folded in first, so that the counting and the
  * evidence that follow see people rather than artefacts.
  */
+/** "our guest of today is Terry", "my guest is Margo" — said by the host, about
+ *  the guest. Matched on the first name only: Deepgram routinely mangles a
+ *  surname it has never heard ("Borishos" for Bouricius) while getting the
+ *  given name right. */
+const INTRODUCTION = /\bguests?\s+(?:of\s+)?(?:today|the\s+day)?\s*(?:is|are)\s+([\p{Lu}][\p{L}'\u2019-]*)/iu
+
+export function introducesGuest(text: string, guests: string[]): boolean {
+  const match = INTRODUCTION.exec(text || '')
+  if (!match) return false
+  const spoken = match[1].toLowerCase()
+  return guests.some((guest) => guest.toLowerCase().split(/\s+/)[0] === spoken)
+}
+
 export function resolveSpeakers(input: {
   utterances: Utterance[]
   host: string
@@ -167,11 +180,29 @@ export function resolveSpeakers(input: {
   const mergedWords = new Map<number, number>()
   for (const [id, root] of merged) mergedWords.set(root, (mergedWords.get(root) || 0) + (words.get(id) || 0))
 
-  // --- the host opens the episode -----------------------------------------
-  const host = merged.get(input.utterances[0].speaker) as number
+  // --- who is the host ------------------------------------------------------
+  // Opening the episode is the usual evidence, but it is positional and a cold
+  // open defeats it: Terry Bouricius' episode begins with the guest speaking
+  // over the titles, and Deepgram put that and the host's welcome in one
+  // utterance, so the opening cluster was mostly the guest. Every name in that
+  // episode came out exactly swapped.
+  //
+  // Introducing the guest is evidence about the speaker rather than the clock:
+  // whoever says "our guest of today is X" is the host, whenever the episode
+  // began. Where both agree — nearly always — nothing changes.
+  let host = merged.get(input.utterances[0].speaker) as number
+  let hostReason = "apre l'episodio"
+  const introducer = input.utterances.find((utterance) => introducesGuest(utterance.text, input.guests))
+  if (introducer) {
+    const cluster = merged.get(introducer.speaker) as number
+    if (cluster !== host) {
+      host = cluster
+      hostReason = "presenta l'ospite"
+    }
+  }
   const names: SpeakerNames = new Map(canonical.map((id) => [id, null]))
   names.set(host, input.host)
-  reasons.push(`sp${host} = ${input.host} (apre l'episodio)`)
+  reasons.push(`sp${host} = ${input.host} (${hostReason})`)
 
   const others = canonical.filter((id) => id !== host)
 

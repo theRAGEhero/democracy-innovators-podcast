@@ -2,10 +2,10 @@
 
 Generato da `npm run status:episodes`. **Non modificare a mano**: rigenerare.
 
-- **62 episodi**, di cui 61 con audio
-- **59** con capitoli cliccabili, 0 con capitoli non ancorati, 2 senza capitoli
-- **1578** blocchi indicizzati per l'assistente
-- **59** con un SRT disponibile, **61** con una trascrizione Deepgram
+- **66 episodi**, di cui 65 con audio
+- **63** con capitoli cliccabili, 0 con capitoli non ancorati, 2 senza capitoli
+- **2381** blocchi indicizzati per l'assistente
+- **63** con un SRT disponibile, **65** con una trascrizione Deepgram
 
 Legenda: ✓ presente · — assente · **NC** dalla cartella Nextcloud · **feed** dal feed Castopod · **RSS** dal progetto RSS-Analysis · **?** fonte non raggiungibile da qui.
 Nella colonna Capitoli, `16/16` significa 16 capitoli tutti ancorati — ancorato vuol dire che il titolo è cliccabile e porta al punto giusto della trascrizione.
@@ -14,42 +14,46 @@ Nella colonna Capitoli, `16/16` significa 16 capitoli tutti ancorati — ancorat
 
 | Episodio | Data | Audio | Cover | Img | Video | Capitoli | Testo | AI | Ospiti | Link | Temi | SRT | Deepgram |
 |---|---|:-:|:-:|:-:|:-:|:-:|--:|--:|:-:|--:|--:|:-:|:-:|
-| Ryan Koch from the Civic Tech Chat podcast on  | 2026-08-25 | ✓ | ✓ | ✓ | ✓ | 16/16 | 54k | 22 | ✓ | 1 | 2 | NC | NC |
-| Gianluca Misuraca from Inspiring Futures on AI | 2026-08-12 | ✓ | ✓ | ✓ | — | 9/9 | 37k | 14 | ✓ | 2 | 3 | NC | NC |
-| Alvaro Oleart on the instrumentalisation of EU | 2026-08-04 | ✓ | ✓ | ✓ | — | 14/14 | 45k | 17 | ✓ | 2 | 2 | NC | RSS |
-| Alberto Fernandez Gibaja from International ID | 2026-07-29 | ✓ | ✓ | ✓ | — | 13/13 | 43k | 17 | ✓ | 2 | 2 | NC | RSS |
-| Simon Horton on Negotiation, Conflict Resoluti | 2026-07-15 | ✓ | ✓ | ✓ | ✓ | 12/12 | 38k | 15 | ✓ | 3 | 2 | NC | RSS |
-| Anthony Zacharzewski on Democratic Infrastruct | 2026-07-08 | ✓ | ✓ | ✓ | ✓ | 10/10 | 53k | 21 | ✓ | 2 | 2 | NC | RSS |
-| Kenobit on Mastodon, the Fediverse, and Decent | 2026-07-02 | ✓ | ✓ | ✓ | ✓ | 12/12 | 67k | 26 | ✓ | 2 | 3 | NC | NC |
-| Alice Casiraghi on designing regenerative syst | 2026-06-30 | ✓ | ✓ | ✓ | ✓ | 11/11 | 42k | 17 | ✓ | 3 | 3 | NC | RSS |
-| Paolo Spada on participatory budgeting, citize | 2026-06-09 | ✓ | ✓ | ✓ | — | 11/11 | 62k | 24 | ✓ | 2 | 2 | NC | RSS |
-| Antoine Vergne from Missions Publiques on scal | 2026-06-02 | ✓ | ✓ | ✓ | ✓ | 11/11 | 47k | 19 | ✓ | 2 | 3 | NC | RSS |
-| Giovanni Di Sotto on electronic voting, securi | 2026-05-20 | ✓ | ✓ | ✓ | ✓ | 11/11 | 35k | 13 | ✓ | 2 | 4 | NC | RSS |
-| Paul Zeitz about permanent citizens' assemblie | 2026-05-05 | ✓ | ✓ | ✓ | ✓ | 9/9 | 34k | 13 | ✓ | 2 | 1 | NC | RSS |
-| Ben Nelson on the Minerva Project, reforming h | 2026-04-28 | ✓ | ✓ | ✓ | ✓ | 10/10 | 38k | 15 | ✓ | 2 | 1 | NC | RSS |
-| Cecile Green & Seth Frey on the Commoning Stan | 2026-04-21 | ✓ | ✓ | ✓ | ✓ | 8/8 | 41k | 16 | ✓ | 4 | 3 | feed | RSS |
-| Sylvain Le Bon from Startin'blox about Data Sp | 2026-04-14 | ✓ | ✓ | ✓ | ✓ | 16/16 | 38k | 15 | ✓ | 2 | 2 | NC | RSS |
-| Jorge Lagarto about LabX and human centric des | 2026-04-10 | ✓ | ✓ | ✓ | ✓ | 10/10 | 29k | 12 | ✓ | 2 | 1 | NC | RSS |
-| Wietse van Ransbeeck about Go Vocal and how to | 2026-04-01 | ✓ | ✓ | ✓ | ✓ | 13/13 | 42k | 16 | ✓ | 2 | 2 | NC | RSS |
-| Marcello Coppa on the Feel Community, the Govt | 2026-03-24 | ✓ | ✓ | ✓ | ✓ | 7/7 | 33k | 13 | ✓ | 3 | 1 | NC | RSS |
-| Stefaan Verhulst about governance, decision-ma | 2026-03-17 | ✓ | ✓ | ✓ | — | 10/10 | 37k | 15 | ✓ | 3 | 1 | NC | RSS |
-| Yuting Jiang on the Agora Citizen Network, Pol | 2026-03-10 | ✓ | ✓ | ✓ | — | 12/12 | 26k | 10 | ✓ | 2 | 1 | NC | RSS |
-| Hélène Landemore about deliberative democracy, | 2026-03-03 | ✓ | ✓ | ✓ | — | 11/11 | 42k | 16 | ✓ | 2 | 1 | feed | RSS |
-| Nathan Schneider on protocols, modular politic | 2026-02-26 | ✓ | ✓ | ✓ | — | 8/8 | 34k | 14 | ✓ | 2 | 2 | NC | RSS |
+| Thomas Lorenz on Brief nach Berlin, lowering b | 2026-09-22 | ✓ | ✓ | ✓ | ✓ | 11/11 | 45k | 19 | ✓ | — | 3 | NC | NC |
+| Terry Bouricius on multi-body sortition and re | 2026-09-15 | ✓ | ✓ | ✓ | ✓ | 12/12 | 53k | 43 | ✓ | — | 1 | feed | RSS |
+| Malik Lakoubay from Dark Matter Labs on financ | 2026-09-10 | ✓ | ✓ | ✓ | — | 13/13 | 42k | 37 | ✓ | — | — | NC | NC |
+| Olivier Schulbaum on GRID, collective AI & slo | 2026-09-01 | ✓ | ✓ | ✓ | ✓ | 13/13 | 49k | 45 | ✓ | — | 3 | NC | NC |
+| Ryan Koch from the Civic Tech Chat podcast on  | 2026-08-25 | ✓ | ✓ | ✓ | ✓ | 16/16 | 54k | 42 | ✓ | 1 | 2 | NC | NC |
+| Gianluca Misuraca from Inspiring Futures on AI | 2026-08-12 | ✓ | ✓ | ✓ | — | 9/9 | 37k | 32 | ✓ | 2 | 3 | NC | NC |
+| Alvaro Oleart on the instrumentalisation of EU | 2026-08-04 | ✓ | ✓ | ✓ | — | 14/14 | 45k | 40 | ✓ | 2 | 2 | NC | RSS |
+| Alberto Fernandez Gibaja from International ID | 2026-07-29 | ✓ | ✓ | ✓ | — | 13/13 | 43k | 35 | ✓ | 2 | 2 | NC | RSS |
+| Simon Horton on Negotiation, Conflict Resoluti | 2026-07-15 | ✓ | ✓ | ✓ | ✓ | 12/12 | 38k | 36 | ✓ | 3 | 2 | NC | RSS |
+| Anthony Zacharzewski on Democratic Infrastruct | 2026-07-08 | ✓ | ✓ | ✓ | ✓ | 10/10 | 53k | 45 | ✓ | 2 | 2 | NC | RSS |
+| Kenobit on Mastodon, the Fediverse, and Decent | 2026-07-02 | ✓ | ✓ | ✓ | ✓ | 12/12 | 67k | 24 | ✓ | 2 | 3 | NC | NC |
+| Alice Casiraghi on designing regenerative syst | 2026-06-30 | ✓ | ✓ | ✓ | ✓ | 11/11 | 42k | 36 | ✓ | 3 | 3 | NC | RSS |
+| Paolo Spada on participatory budgeting, citize | 2026-06-09 | ✓ | ✓ | ✓ | — | 11/11 | 62k | 48 | ✓ | 2 | 2 | NC | RSS |
+| Antoine Vergne from Missions Publiques on scal | 2026-06-02 | ✓ | ✓ | ✓ | ✓ | 11/11 | 47k | 39 | ✓ | 2 | 3 | NC | RSS |
+| Giovanni Di Sotto on electronic voting, securi | 2026-05-20 | ✓ | ✓ | ✓ | ✓ | 11/11 | 35k | 24 | ✓ | 2 | 4 | NC | RSS |
+| Paul Zeitz about permanent citizens' assemblie | 2026-05-05 | ✓ | ✓ | ✓ | ✓ | 9/9 | 34k | 28 | ✓ | 2 | 1 | NC | RSS |
+| Ben Nelson on the Minerva Project, reforming h | 2026-04-28 | ✓ | ✓ | ✓ | ✓ | 10/10 | 38k | 31 | ✓ | 2 | 1 | NC | RSS |
+| Cecile Green & Seth Frey on the Commoning Stan | 2026-04-21 | ✓ | ✓ | ✓ | ✓ | 8/8 | 41k | 33 | ✓ | 4 | 3 | feed | RSS |
+| Sylvain Le Bon from Startin'blox about Data Sp | 2026-04-14 | ✓ | ✓ | ✓ | ✓ | 16/16 | 38k | 35 | ✓ | 2 | 2 | NC | RSS |
+| Jorge Lagarto about LabX and human centric des | 2026-04-10 | ✓ | ✓ | ✓ | ✓ | 10/10 | 29k | 26 | ✓ | 2 | 1 | NC | RSS |
+| Wietse van Ransbeeck about Go Vocal and how to | 2026-04-01 | ✓ | ✓ | ✓ | ✓ | 13/13 | 42k | 36 | ✓ | 2 | 2 | NC | RSS |
+| Marcello Coppa on the Feel Community, the Govt | 2026-03-24 | ✓ | ✓ | ✓ | ✓ | 7/7 | 33k | 28 | ✓ | 3 | 1 | NC | RSS |
+| Stefaan Verhulst about governance, decision-ma | 2026-03-17 | ✓ | ✓ | ✓ | — | 10/10 | 37k | 30 | ✓ | 3 | 1 | NC | RSS |
+| Yuting Jiang on the Agora Citizen Network, Pol | 2026-03-10 | ✓ | ✓ | ✓ | — | 12/12 | 26k | 21 | ✓ | 2 | 1 | NC | RSS |
+| Hélène Landemore about deliberative democracy, | 2026-03-03 | ✓ | ✓ | ✓ | — | 11/11 | 42k | 35 | ✓ | 2 | 1 | feed | RSS |
+| Nathan Schneider on protocols, modular politic | 2026-02-26 | ✓ | ✓ | ✓ | — | 8/8 | 34k | 28 | ✓ | 2 | 2 | NC | RSS |
 | Massimo Bugani and the Rousseau platform: a de | 2026-02-19 | ✓ | ✓ | ✓ | — | 14/15 | 72k | 27 | ✓ | — | 1 | feed | RSS |
-| Matt Stempeck on the Civic Tech Field Guide an | 2026-01-27 | ✓ | ✓ | ✓ | — | 13/13 | 48k | 19 | ✓ | 3 | 1 | NC | RSS |
-| Samuel Vance-Law on how digital transformation | 2026-01-19 | ✓ | ✓ | ✓ | — | 13/13 | 43k | 17 | ✓ | 3 | 1 | NC | RSS |
-| Cross-podcast dialogue on governance, democrac | 2026-01-13 | ✓ | ✓ | ✓ | — | 9/9 | 58k | 24 | — | — | 1 | — | RSS |
-| Simone Maria Parazzoli about the Agentic State | 2026-01-06 | ✓ | ✓ | ✓ | — | 14/14 | 42k | 10 | ✓ | 2 | 2 | NC | RSS |
-| Marco Cappato & Francesco Vecchi discuss how A | 2025-12-16 | ✓ | ✓ | ✓ | — | 6/6 | 43k | 17 | ✓ | 4 | 1 | feed | RSS |
-| Vir Sanghavi about Tilt.vote and how it can im | 2025-12-04 | ✓ | ✓ | ✓ | — | 15/15 | 39k | 16 | ✓ | 2 | 3 | feed | RSS |
-| Bruce Schneier on democracy in the context of  | 2025-11-26 | ✓ | ✓ | ✓ | — | 14/15 | 39k | 15 | ✓ | 2 | 3 | — | RSS |
-| Tiago Peixoto about the role of collective act | 2025-11-19 | ✓ | ✓ | ✓ | — | 9/9 | 47k | 8 | ✓ | 2 | 2 | NC | RSS |
-| Jonathan Moskovic about the future of delibera | 2025-11-12 | ✓ | ✓ | ✓ | — | 11/11 | 41k | 17 | ✓ | 2 | 2 | feed | RSS |
-| Carol Romero & Andrés Pereira de Lucena about  | 2025-10-28 | ✓ | ✓ | ✓ | — | 12/12 | 48k | 19 | ✓ | 3 | 1 | NC | RSS |
-| Alex Blaga from Trollwall about using AI to co | 2025-10-24 | ✓ | ✓ | ✓ | — | 18/18 | 40k | 16 | ✓ | 1 | 2 | NC | RSS |
-| Sonia Bussu about using arts to bring emotions | 2025-10-14 | ✓ | ✓ | ✓ | — | 9/9 | 27k | 10 | ✓ | 1 | 3 | NC | RSS |
-| Graham Wetherall-Grujić of the Innovation in P | 2025-10-02 | ✓ | ✓ | ✓ | — | 15/16 | 48k | 25 | ✓ | 2 | 3 | NC | RSS |
+| Matt Stempeck on the Civic Tech Field Guide an | 2026-01-27 | ✓ | ✓ | ✓ | — | 13/13 | 48k | 42 | ✓ | 3 | 1 | NC | RSS |
+| Samuel Vance-Law on how digital transformation | 2026-01-19 | ✓ | ✓ | ✓ | — | 13/13 | 43k | 40 | ✓ | 3 | 1 | NC | RSS |
+| Cross-podcast dialogue on governance, democrac | 2026-01-13 | ✓ | ✓ | ✓ | — | 9/9 | 58k | 48 | — | — | 1 | — | RSS |
+| Simone Maria Parazzoli about the Agentic State | 2026-01-06 | ✓ | ✓ | ✓ | — | 14/14 | 42k | 39 | ✓ | 2 | 2 | NC | RSS |
+| Marco Cappato & Francesco Vecchi discuss how A | 2025-12-16 | ✓ | ✓ | ✓ | — | 6/6 | 43k | 34 | ✓ | 4 | 1 | feed | RSS |
+| Vir Sanghavi about Tilt.vote and how it can im | 2025-12-04 | ✓ | ✓ | ✓ | — | 15/15 | 39k | 37 | ✓ | 2 | 3 | feed | RSS |
+| Bruce Schneier on democracy in the context of  | 2025-11-26 | ✓ | ✓ | ✓ | — | 14/15 | 39k | 32 | ✓ | 2 | 3 | — | RSS |
+| Tiago Peixoto about the role of collective act | 2025-11-19 | ✓ | ✓ | ✓ | — | 9/9 | 47k | 38 | ✓ | 2 | 2 | NC | RSS |
+| Jonathan Moskovic about the future of delibera | 2025-11-12 | ✓ | ✓ | ✓ | — | 11/11 | 41k | 35 | ✓ | 2 | 2 | feed | RSS |
+| Carol Romero & Andrés Pereira de Lucena about  | 2025-10-28 | ✓ | ✓ | ✓ | — | 12/12 | 48k | 47 | ✓ | 3 | 1 | NC | RSS |
+| Alex Blaga from Trollwall about using AI to co | 2025-10-24 | ✓ | ✓ | ✓ | — | 18/18 | 40k | 37 | ✓ | 1 | 2 | NC | RSS |
+| Sonia Bussu about using arts to bring emotions | 2025-10-14 | ✓ | ✓ | ✓ | — | 9/9 | 27k | 26 | ✓ | 1 | 3 | NC | RSS |
+| Graham Wetherall-Grujić of the Innovation in P | 2025-10-02 | ✓ | ✓ | ✓ | — | 15/16 | 48k | 45 | ✓ | 2 | 3 | NC | RSS |
 | Richard Bartlett about Loomio and how horizont | 2025-09-24 | ✓ | ✓ | ✓ | — | 15/19 | 40k | 37 | ✓ | 2 | 3 | NC | RSS |
 | Martín Carcasson about the Center for Public D | 2025-09-18 | ✓ | ✓ | ✓ | — | 19/19 | 64k | 66 | ✓ | 3 | 2 | NC | RSS |
 | Tomas Rakos about Participation Factory and wh | 2025-09-10 | ✓ | ✓ | ✓ | — | 18/18 | 43k | 39 | ✓ | 2 | 1 | NC | RSS |
@@ -93,10 +97,14 @@ La mappa dei nomi sta in `newGuestRules`, in `scripts/sync-ghost.ts`
   - Cross-podcast dialogue on governance, democracy, and insti
   - Introducing the democracy innovators podcast: The future o
 
-### Ospiti senza link ufficiali — 2
+### Ospiti senza link ufficiali — 6
 
 Ricerca a mano dei riferimenti ufficiali, poi `officialLinks` sull'ospite. Dove non esiste una pagina attribuibile con certezza, meglio lasciare vuoto che collegare un omonimo.
 
+  - Thomas Lorenz on Brief nach Berlin, lowering barriers to p
+  - Terry Bouricius on multi-body sortition and redesigning de
+  - Malik Lakoubay from Dark Matter Labs on financing civic in
+  - Olivier Schulbaum on GRID, collective AI & slowing AI in d
   - Massimo Bugani and the Rousseau platform: a democratic exp
   - Michihito Matsuda about the AI Mayor project and why we ne
 

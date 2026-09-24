@@ -71,6 +71,12 @@ export function loadDeepgramEpisodes(): Map<string, DeepgramEpisode> | null {
 
   // Both feeds: the main one and the Italian channel, which carries three
   // episodes whose audio our site uses under English titles.
+  //
+  // RSS-Analysis moved the Deepgram response out of transcripts.raw_response
+  // into transcript_payloads, where the full reply is gzipped and the turns are
+  // kept beside it as plain JSON. speaker_turns holds exactly the fields the
+  // old json_each over results.utterances produced, so reading it is both the
+  // fix and the cheaper path — no decompression for data we already have.
   const query = `
     SELECT json_group_array(json_object(
              'audio', e.audio_url,
@@ -82,9 +88,9 @@ export function loadDeepgramEpisodes(): Map<string, DeepgramEpisode> | null {
                          'e', json_extract(u.value, '$.end'),
                          'p', json_extract(u.value, '$.speaker'),
                          't', json_extract(u.value, '$.transcript')))
-                       FROM json_each(t.raw_response, '$.results.utterances') u)))
+                       FROM json_each(tp.speaker_turns) u)))
     FROM episodes e
-    JOIN transcripts t ON t.episode_id = e.id
+    JOIN transcript_payloads tp ON tp.episode_id = e.id
     JOIN podcasts p ON p.id = e.podcast_id
     WHERE p.rss_url LIKE '%democracyinnovators%'`
 

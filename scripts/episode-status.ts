@@ -91,9 +91,13 @@ function deepgramFolders(): string[] | null {
  */
 function diarisedAudioKeys(): Set<string> | null {
   if (!fs.existsSync(RSS_ANALYSIS_DB)) return null
-  const query = "SELECT e.audio_url FROM episodes e JOIN transcripts t ON t.episode_id = e.id "
+  // RSS-Analysis moved the Deepgram reply into transcript_payloads, where the
+  // turns sit beside the gzipped response. transcripts.diarization is gone, and
+  // the old query failed in a way that still printed a number — six episodes
+  // instead of sixty-four — so the report looked plausible and was wrong.
+  const query = "SELECT e.audio_url FROM episodes e JOIN transcript_payloads tp ON tp.episode_id = e.id "
     + "JOIN podcasts p ON p.id = e.podcast_id "
-    + "WHERE p.rss_url LIKE '%democracyinnovators%' AND t.diarization IS NOT NULL"
+    + "WHERE p.rss_url LIKE '%democracyinnovators%' AND tp.speaker_turns IS NOT NULL"
   try {
     const output = execFileSync('sqlite3', ['-readonly', RSS_ANALYSIS_DB, query], { encoding: 'utf8', maxBuffer: 4 << 20 })
     const keys = output.split('\n').map((line) => audioKey(line.trim())).filter((key): key is string => Boolean(key))

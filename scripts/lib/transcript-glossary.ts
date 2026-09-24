@@ -36,6 +36,10 @@ const MIN_TERM_LENGTH = 4
  * their two-word forms.
  */
 const MIN_SINGLE_WORD_LENGTH = 6
+/** A multi-word term harvested from prose must carry at least one word this
+ *  long. Without it, "So Hi" and its kind are close enough to common speech to
+ *  rewrite it. Names that matter ("Dark Matter", "Open Source") always clear it. */
+const HARVEST_MIN_WORD_LENGTH = 4
 /** Never more than two edits, whatever the length. Beyond that the match is no
  *  longer a mishearing of the same word. */
 const MAX_EDITS = 2
@@ -165,6 +169,13 @@ export function buildGlossary(input: {
   // harvested variant is dropped rather than allowed to compete.
   const structuredNorms = [...structured].map(normalize)
   const kept = [...harvested].filter((term) => {
+    // A harvested phrase made only of very short words is not a name, it is
+    // ordinary speech that happened to be capitalised. "So Hi there. Hello."
+    // in a published transcript put "So Hi" in the glossary, and every "So I"
+    // in that episode was then one edit from being rewritten — fifteen of them
+    // in a single conversation. A real two-word name has a word with shape to
+    // it; the CMS tier is exempt, because a name stated outright is trusted.
+    if (!term.split(/\s+/).some((word) => normalize(word).length >= HARVEST_MIN_WORD_LENGTH)) return false
     const norm = normalize(term)
     return !structuredNorms.some(
       (known) => known !== norm && editDistance(norm, known, MAX_EDITS) <= MAX_EDITS,

@@ -38,6 +38,10 @@ const newGuestRules: Record<string, string[]> = {
   'alvaro-oleart-on-citizen-assemblies-collective-actors-and-democratic-innovation': ['Alvaro Oleart'],
   'gianluca-misuraca-from-inspiring-futures-on-ai-in-the-public-sector': ['Gianluca Misuraca'],
   'ryan-koch-from-the-civic-tech-chat-podcast-on-civic-innovation-and-effective-use-of-ai': ['Ryan Koch'],
+  'olivier-schulbaum-on-grid-collective-ai-slowing-ai-in-democratic-deliberation': ['Olivier Schulbaum'],
+  'malik-lakoubay-from-dark-matter-labs-on-financing-civic-infrastructure-and-democratic-innovation-2': ['Malik Lakoubay'],
+  'terry-bouricius-on-multi-body-sortition-and-redesigning-democratic-lawmaking': ['Terry Bouricius'],
+  'thomas-lorenz-on-brief-nach-berlin-lowering-barriers-to-participation-open-source-civic-tech': ['Thomas Lorenz'],
 }
 
 const topicRules: Array<[string, RegExp]> = [
