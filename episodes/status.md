@@ -2,10 +2,10 @@
 
 Generato da `npm run status:episodes`. **Non modificare a mano**: rigenerare.
 
-- **66 episodi**, di cui 65 con audio
-- **63** con capitoli cliccabili, 0 con capitoli non ancorati, 2 senza capitoli
-- **2381** blocchi indicizzati per l'assistente
-- **63** con un SRT disponibile, **65** con una trascrizione Deepgram
+- **67 episodi**, di cui 66 con audio
+- **64** con capitoli cliccabili, 0 con capitoli non ancorati, 2 senza capitoli
+- **2426** blocchi indicizzati per l'assistente
+- **64** con un SRT disponibile, **66** con una trascrizione Deepgram
 
 Legenda: ✓ presente · — assente · **NC** dalla cartella Nextcloud · **feed** dal feed Castopod · **RSS** dal progetto RSS-Analysis · **?** fonte non raggiungibile da qui.
 Nella colonna Capitoli, `16/16` significa 16 capitoli tutti ancorati — ancorato vuol dire che il titolo è cliccabile e porta al punto giusto della trascrizione.
@@ -14,7 +14,8 @@ Nella colonna Capitoli, `16/16` significa 16 capitoli tutti ancorati — ancorat
 
 | Episodio | Data | Audio | Cover | Img | Video | Capitoli | Testo | AI | Ospiti | Link | Temi | SRT | Deepgram |
 |---|---|:-:|:-:|:-:|:-:|:-:|--:|--:|:-:|--:|--:|:-:|:-:|
-| Thomas Lorenz on Brief nach Berlin, lowering b | 2026-09-22 | ✓ | ✓ | ✓ | ✓ | 11/11 | 45k | 19 | ✓ | — | 3 | NC | NC |
+| Paul Nemitz on AI’s threat to democracy, Big T | 2026-10-01 | ✓ | ✓ | ✓ | — | 7/7 | 34k | 27 | ✓ | — | 1 | NC | NC |
+| Thomas Lorenz on Brief nach Berlin, lowering b | 2026-09-22 | ✓ | ✓ | ✓ | ✓ | 11/11 | 45k | 37 | ✓ | — | 3 | NC | NC |
 | Terry Bouricius on multi-body sortition and re | 2026-09-15 | ✓ | ✓ | ✓ | ✓ | 12/12 | 53k | 43 | ✓ | — | 1 | feed | RSS |
 | Malik Lakoubay from Dark Matter Labs on financ | 2026-09-10 | ✓ | ✓ | ✓ | — | 13/13 | 42k | 37 | ✓ | — | — | NC | NC |
 | Olivier Schulbaum on GRID, collective AI & slo | 2026-09-01 | ✓ | ✓ | ✓ | ✓ | 13/13 | 49k | 45 | ✓ | — | 3 | NC | NC |
@@ -97,10 +98,11 @@ La mappa dei nomi sta in `newGuestRules`, in `scripts/sync-ghost.ts`
   - Cross-podcast dialogue on governance, democracy, and insti
   - Introducing the democracy innovators podcast: The future o
 
-### Ospiti senza link ufficiali — 6
+### Ospiti senza link ufficiali — 7
 
 Ricerca a mano dei riferimenti ufficiali, poi `officialLinks` sull'ospite. Dove non esiste una pagina attribuibile con certezza, meglio lasciare vuoto che collegare un omonimo.
 
+  - Paul Nemitz on AI’s threat to democracy, Big Tech power & 
   - Thomas Lorenz on Brief nach Berlin, lowering barriers to p
   - Terry Bouricius on multi-body sortition and redesigning de
   - Malik Lakoubay from Dark Matter Labs on financing civic in

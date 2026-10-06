@@ -42,6 +42,7 @@ const newGuestRules: Record<string, string[]> = {
   'malik-lakoubay-from-dark-matter-labs-on-financing-civic-infrastructure-and-democratic-innovation-2': ['Malik Lakoubay'],
   'terry-bouricius-on-multi-body-sortition-and-redesigning-democratic-lawmaking': ['Terry Bouricius'],
   'thomas-lorenz-on-brief-nach-berlin-lowering-barriers-to-participation-open-source-civic-tech': ['Thomas Lorenz'],
+  'paul-nemitz-on-ais-threat-to-democracy-big-tech-power-decentralization': ['Paul Nemitz'],
 }
 
 const topicRules: Array<[string, RegExp]> = [
