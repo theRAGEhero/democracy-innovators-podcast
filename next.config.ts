@@ -26,6 +26,11 @@ const nextConfig: NextConfig = {
       {
         pathname: '/media/**',
       },
+      // The editor portraits on /about. Without this the optimizer answers 400
+      // and the photos never render, even though the files are served fine.
+      {
+        pathname: '/about/**',
+      },
     ],
     qualities: [75, 90, 100],
     remotePatterns: [
