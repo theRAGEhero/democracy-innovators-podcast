@@ -3,6 +3,8 @@ services:
     image: democracy-innovators-podcast:latest
     build:
       context: .
+      args:
+        NEXT_PUBLIC_SERVER_URL: https://democracyinnovators.com
       dockerfile: Dockerfile
     container_name: democracy-innovators-podcast
     restart: unless-stopped

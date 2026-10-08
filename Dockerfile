@@ -27,7 +27,13 @@ COPY . .
 
 ENV DATABASE_URL=file:./build.db
 ENV PAYLOAD_SECRET=build-only-payload-secret-not-used-at-runtime
-ENV NEXT_PUBLIC_SERVER_URL=https://stream.democracyinnovators.com
+# NEXT_PUBLIC_* is substituted into the bundles at build time, server code
+# included, so the value here is the one the site uses — the runtime variable in
+# docker-compose does not reach it. An ARG so the domain can be changed without
+# editing this file again; compose passes it from the same place it sets the
+# runtime value, which keeps the two from drifting apart.
+ARG NEXT_PUBLIC_SERVER_URL=https://democracyinnovators.com
+ENV NEXT_PUBLIC_SERVER_URL=$NEXT_PUBLIC_SERVER_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Next.js collects completely anonymous telemetry data about general usage.
