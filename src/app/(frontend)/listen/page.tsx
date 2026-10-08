@@ -19,7 +19,7 @@ const groups: { title: string; links: (PlatformLink & { internal?: boolean })[] 
     title: 'Stay in touch',
     links: [
       { label: 'Email newsletter', href: '/subscribe', hint: 'Every new episode', internal: true },
-      { label: 'Website & blog', href: 'https://democracyinnovators.com', hint: 'Long reads' },
+      { label: 'Website & blog', href: 'https://old.democracyinnovators.com', hint: 'Long reads' },
     ],
   },
   { title: 'Support', links: [{ label: 'Donate via PayPal', href: supportUrl, hint: 'Keep it independent' }] },

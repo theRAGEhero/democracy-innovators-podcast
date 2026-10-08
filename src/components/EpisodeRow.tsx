@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { PlayEpisodeButton } from './PlayEpisodeButton'
 import { extractCastopodEpisodeUrl } from '@/lib/embeds'
 import { normalizeChapters } from '@/lib/chapters'
+import { episodeLabel } from '@/lib/episode-number'
 
 const dateFormatter = new Intl.DateTimeFormat('en', {
   day: '2-digit',
@@ -11,7 +12,7 @@ const dateFormatter = new Intl.DateTimeFormat('en', {
   year: 'numeric',
 })
 
-export function EpisodeRow({ episode, index }: { episode: Episode; index: number }) {
+export function EpisodeRow({ episode }: { episode: Episode }) {
   const playerEpisode = episode.audioUrl ? {
     id: episode.id,
     slug: episode.slug,
@@ -23,7 +24,9 @@ export function EpisodeRow({ episode, index }: { episode: Episode; index: number
   } : null
   return (
     <article className="episode-row">
-      <span className="index-number">{String(index + 1).padStart(2, '0')}</span>
+      {/* Empty for the trailer, which has no number — the column keeps its
+          width either way, so the row stays aligned. */}
+      <span className="index-number">{episodeLabel(episode)}</span>
       <Link className="episode-image-link" href={`/episode/${episode.slug}`}>
         {episode.featureImageUrl ? (
           <Image

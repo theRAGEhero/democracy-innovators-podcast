@@ -11,6 +11,7 @@ const navItems = [
   { href: '/topics', label: 'Topics', children: [{ href: '/map', label: 'Map' }] },
   { href: '/listen', label: 'Listen' },
   { href: '/about', label: 'About' },
+  { href: '/mcp', label: 'MCP' },
   { href: '/contact', label: 'Contact', secondary: true },
 ]
 

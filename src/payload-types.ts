@@ -185,6 +185,14 @@ export interface Episode {
   slug: string;
   legacyId?: string | null;
   publishedAt: string;
+  /**
+   * The podcast's own number, from <itunes:episode> in the Castopod feed. Written by audio:sync, not by hand. Empty on the introductory trailer, which has no number.
+   */
+  episodeNumber?: number | null;
+  /**
+   * Which feed the number belongs to. The Italian channel numbers itself from 1, so its episodes would otherwise appear to be the first three of the main series.
+   */
+  episodeSeries?: ('main' | 'ita') | null;
   excerpt?: string | null;
   featureImageUrl?: string | null;
   /**
@@ -1421,6 +1429,8 @@ export interface EpisodesSelect<T extends boolean = true> {
   slug?: T;
   legacyId?: T;
   publishedAt?: T;
+  episodeNumber?: T;
+  episodeSeries?: T;
   excerpt?: T;
   featureImageUrl?: T;
   squareCoverUrl?: T;

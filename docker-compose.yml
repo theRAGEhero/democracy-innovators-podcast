@@ -15,7 +15,7 @@ services:
       - .env
     environment:
       DATABASE_URL: file:/data/database/payload.db
-      NEXT_PUBLIC_SERVER_URL: https://stream.democracyinnovators.com
+      NEXT_PUBLIC_SERVER_URL: https://democracyinnovators.com
       NODE_ENV: production
       PORT: 3000
     volumes:

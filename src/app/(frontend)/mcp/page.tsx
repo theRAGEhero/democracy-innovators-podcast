@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description:
     'A free, open endpoint that lets Claude Code, Codex and other AI tools search every episode '
     + 'transcript and cite the exact second a thing was said.',
-  alternates: { canonical: '/developers' },
+  alternates: { canonical: '/mcp' },
 }
 
 export default function DevelopersPage() {

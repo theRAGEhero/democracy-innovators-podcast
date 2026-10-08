@@ -22,7 +22,7 @@ export default function PrivacyPage() {
         <h2>Newsletter</h2>
         <p>
           If you subscribe, your email address and subscription status are processed by our
-          existing Ghost publication at democracyinnovators.com. Ghost sends the confirmation and
+          existing Ghost publication at old.democracyinnovators.com. Ghost sends the confirmation and
           newsletter emails and provides an unsubscribe link. Newsletter subscription is optional
           and based on your consent.
         </p>
@@ -89,7 +89,7 @@ export default function PrivacyPage() {
               <td>Third-party (on the subscribe page)</td>
               <td>
                 The newsletter sign-up on our subscribe page is provided by Ghost
-                (democracyinnovators.com) and may set its own cookies when you interact with it.
+                (old.democracyinnovators.com) and may set its own cookies when you interact with it.
               </td>
             </tr>
             <tr>

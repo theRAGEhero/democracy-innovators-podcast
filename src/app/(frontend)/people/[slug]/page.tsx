@@ -111,8 +111,8 @@ export default async function GuestPage({ params }: { params: Promise<{ slug: st
       {episodes.length ? (
         <section className="participation-episodes">
           <div className="episode-list">
-            {episodes.map((episode, index) => (
-              <EpisodeRow episode={episode} index={index} key={episode.id} />
+            {episodes.map((episode) => (
+              <EpisodeRow episode={episode} key={episode.id} />
             ))}
           </div>
         </section>

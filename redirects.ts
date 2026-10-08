@@ -33,6 +33,13 @@ export const redirects: NextConfig['redirects'] = async () => {
     // Where the editor used to log in.
     { source: '/ghost', destination: '/admin', permanent: false },
     { source: '/ghost/:path*', destination: '/admin', permanent: false },
+    // Still served by Ghost, now at its own hostname. The members paths matter
+    // most: every confirmation and unsubscribe link Ghost has already emailed
+    // carries the apex, and those live in inboxes indefinitely.
+    { source: '/members/:path*', destination: 'https://old.democracyinnovators.com/members/:path*', permanent: false },
+    { source: '/content/images/:path*', destination: 'https://old.democracyinnovators.com/content/images/:path*', permanent: true },
+    // The MCP page moved to match the label in the navigation.
+    { source: '/developers', destination: '/mcp', permanent: true },
   ]
 
   return [internetExplorerRedirect, ...legacyGhostRedirects]

@@ -80,8 +80,8 @@ export default async function EpisodesPage({
       {episodes.length ? (
         <>
           <div className="episode-list archive-list">
-            {episodes.map((episode, index) => (
-              <EpisodeRow episode={episode} index={(page - 1) * PER_PAGE + index} key={episode.id} />
+            {episodes.map((episode) => (
+              <EpisodeRow episode={episode} key={episode.id} />
             ))}
           </div>
 

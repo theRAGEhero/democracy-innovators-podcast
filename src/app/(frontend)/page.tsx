@@ -79,9 +79,6 @@ export default async function HomePage() {
         </p>
         <div className="hero-actions">
           {featured?.audioUrl ? <PlayEpisodeButton className="primary-button" label="Play the latest" episode={{ id: featured.id, slug: featured.slug, title: featured.title, audioUrl: featured.audioUrl, coverUrl: featured.squareCoverUrl || featured.featureImageUrl, castopodUrl: extractCastopodEpisodeUrl(featured.html), chapters: normalizeChapters(featured.chapters) }} /> : <Link className="primary-button" href={featured ? `/episode/${featured.slug}` : '/episodes'}>Listen to the latest</Link>}
-          <Link className="text-link" href="/people">
-            Explore the people <span aria-hidden="true">→</span>
-          </Link>
         </div>
       </section>
 
@@ -113,8 +110,8 @@ export default async function HomePage() {
           <Link className="text-link" href="/episodes">All episodes →</Link>
         </div>
         <div className="episode-list">
-          {episodes.slice(1).map((episode, index) => (
-            <EpisodeRow episode={episode} index={index} key={episode.id} />
+          {episodes.slice(1).map((episode) => (
+            <EpisodeRow episode={episode} key={episode.id} />
           ))}
         </div>
       </section>

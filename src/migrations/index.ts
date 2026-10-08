@@ -6,6 +6,7 @@ import * as migration_20260720_140000_users_api_key from './20260720_140000_user
 import * as migration_20260819_200000_api_limits from './20260819_200000_api_limits';
 import * as migration_20260820_150000_episode_square_cover from './20260820_150000_episode_square_cover';
 import * as migration_20260830_120000_chunk_timing from './20260830_120000_chunk_timing';
+import * as migration_20261008_140000_episode_number from './20261008_140000_episode_number';
 
 export const migrations = [
   {
@@ -47,5 +48,10 @@ export const migrations = [
     up: migration_20260830_120000_chunk_timing.up,
     down: migration_20260830_120000_chunk_timing.down,
     name: '20260830_120000_chunk_timing'
+  },
+  {
+    up: migration_20261008_140000_episode_number.up,
+    down: migration_20261008_140000_episode_number.down,
+    name: '20261008_140000_episode_number'
   },
 ];

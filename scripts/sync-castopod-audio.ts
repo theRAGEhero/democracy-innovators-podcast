@@ -8,11 +8,12 @@ async function main() {
   const db = createClient({ url: databaseUrl })
   const [feed, result] = await Promise.all([
     fetchCastopodFeed(),
-    db.execute("SELECT id, title, slug, html, audio_url AS audioUrl, square_cover_url AS squareCoverUrl FROM episodes WHERE _status = 'published'"),
+    db.execute("SELECT id, title, slug, html, audio_url AS audioUrl, square_cover_url AS squareCoverUrl, episode_number AS episodeNumber, episode_series AS episodeSeries FROM episodes WHERE _status = 'published'"),
   ])
   let matched = 0
   let updated = 0
   let covers = 0
+  let numbers = 0
   const unmatched: string[] = []
 
   for (const row of result.rows) {
@@ -23,19 +24,27 @@ async function main() {
       html: String(row.html || ''),
       audioUrl: String(row.audioUrl || ''),
       squareCoverUrl: String(row.squareCoverUrl || ''),
+      episodeNumber: row.episodeNumber === null || row.episodeNumber === undefined ? null : Number(row.episodeNumber),
+      episodeSeries: row.episodeSeries ? String(row.episodeSeries) : null,
     }
     const needsAudio = !episode.audioUrl
-    // The square cover is refreshed whenever it drifts: Castopod re-renders the
-    // file when the artwork changes, and the URL moves with it.
-    const match = needsAudio || !episode.squareCoverUrl ? findCastopodEpisode(episode, feed) : null
+    // Always look the episode up now. The match used to be skipped once audio
+    // and cover were present, which is every episode — so the number, which
+    // only the feed knows, would never have been written.
+    const match = findCastopodEpisode(episode, feed)
     if (!match) {
       if (needsAudio || !episode.squareCoverUrl) unmatched.push(episode.title)
       continue
     }
     const willSetCover = Boolean(match.item.coverUrl) && match.item.coverUrl !== episode.squareCoverUrl
-    if (!needsAudio && !willSetCover) continue
+    const willSetNumber = match.item.number !== episode.episodeNumber || match.item.series !== episode.episodeSeries
+    if (!needsAudio && !willSetCover && !willSetNumber) continue
     matched += 1
-    const what = [needsAudio ? 'audio' : null, willSetCover ? 'cover' : null].filter(Boolean).join('+')
+    const what = [
+      needsAudio ? 'audio' : null,
+      willSetCover ? 'cover' : null,
+      willSetNumber ? `no.${match.item.number ?? '-'}${match.item.series === 'ita' ? ' ita' : ''}` : null,
+    ].filter(Boolean).join('+')
     console.log(`${apply ? 'UPDATE' : 'WOULD UPDATE'} [${match.matchedBy}/${what}] ${episode.title}`)
     if (apply) {
       if (needsAudio) {
@@ -47,10 +56,22 @@ async function main() {
         await db.execute({ sql: "UPDATE _episodes_v SET version_square_cover_url = ? WHERE parent_id = ?", args: [match.item.coverUrl, episode.id] })
         covers += 1
       }
+      if (willSetNumber) {
+        await db.execute({
+          sql: "UPDATE episodes SET episode_number = ?, episode_series = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?",
+          args: [match.item.number, match.item.series, episode.id],
+        })
+        // episodes keeps drafts, so the versions table carries the same columns.
+        await db.execute({
+          sql: 'UPDATE _episodes_v SET version_episode_number = ?, version_episode_series = ? WHERE parent_id = ?',
+          args: [match.item.number, match.item.series, episode.id],
+        })
+        numbers += 1
+      }
     }
   }
 
-  console.log(`Feed items: ${feed.length}; matched: ${matched}; audio updated: ${updated}; covers updated: ${covers}; unmatched: ${unmatched.length}`)
+  console.log(`Feed items: ${feed.length}; matched: ${matched}; audio updated: ${updated}; covers updated: ${covers}; numbers updated: ${numbers}; unmatched: ${unmatched.length}`)
   for (const title of unmatched) console.log(`UNMATCHED ${title}`)
   if (!apply) console.log('Dry run only. Re-run with --apply after reviewing matches.')
   db.close()

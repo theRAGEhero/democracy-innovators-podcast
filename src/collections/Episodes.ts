@@ -23,6 +23,28 @@ export const Episodes: CollectionConfig = {
     { name: 'slug', type: 'text', required: true, unique: true, index: true },
     { name: 'legacyId', type: 'text', index: true },
     { name: 'publishedAt', type: 'date', required: true, index: true },
+    {
+      name: 'episodeNumber',
+      type: 'number',
+      index: true,
+      admin: {
+        readOnly: true,
+        description:
+          "The podcast's own number, from <itunes:episode> in the Castopod feed. Written by "
+          + 'audio:sync, not by hand. Empty on the introductory trailer, which has no number.',
+      },
+    },
+    {
+      name: 'episodeSeries',
+      type: 'select',
+      options: ['main', 'ita'],
+      admin: {
+        readOnly: true,
+        description:
+          'Which feed the number belongs to. The Italian channel numbers itself from 1, so its '
+          + 'episodes would otherwise appear to be the first three of the main series.',
+      },
+    },
     { name: 'excerpt', type: 'textarea' },
     { name: 'featureImageUrl', type: 'text', label: 'Feature image URL' },
     {

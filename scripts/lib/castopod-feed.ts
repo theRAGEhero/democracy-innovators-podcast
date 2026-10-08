@@ -12,6 +12,13 @@ export type CastopodFeedEpisode = {
    *  where in the transcript each chapter begins, for episodes whose subtitles
    *  are not on the Nextcloud share. */
   transcriptUrl: string
+  /** <itunes:episode>. The podcast's own numbering, which is the only place a
+   *  real episode number exists — the site had only list positions. Absent on
+   *  the introductory trailer, which Castopod leaves unnumbered. */
+  number: number | null
+  /** Which feed it came from. The Italian channel numbers itself from 1, so its
+   *  numbers collide with the main series and have to be told apart. */
+  series: 'main' | 'ita'
 }
 
 const FEED_URLS = [
@@ -34,7 +41,7 @@ function tag(item: string, name: string) {
   return decodeXml(item.match(new RegExp(`<${name}[^>]*>([\\s\\S]*?)<\\/${name}>`, 'i'))?.[1] || '')
 }
 
-export function parseCastopodFeed(xml: string): CastopodFeedEpisode[] {
+export function parseCastopodFeed(xml: string, series: 'main' | 'ita' = 'main'): CastopodFeedEpisode[] {
   return [...xml.matchAll(/<item\b[^>]*>([\s\S]*?)<\/item>/gi)].flatMap((match) => {
     const item = match[1]
     const audioUrl = decodeXml(item.match(/<enclosure\b[^>]*\burl=["']([^"']+)["'][^>]*>/i)?.[1] || '')
@@ -48,15 +55,19 @@ export function parseCastopodFeed(xml: string): CastopodFeedEpisode[] {
     // Only SubRip: the anchor logic parses SRT cues.
     const transcript = item.match(/<podcast:transcript\b[^>]*\btype=["']application\/x-subrip["'][^>]*>/i)?.[0] || ''
     const transcriptUrl = decodeXml(transcript.match(/\burl=["']([^"']+)["']/i)?.[1] || '')
-    return audioUrl && slug && title ? [{ slug, title, audioUrl, pageUrl, coverUrl, chaptersUrl, transcriptUrl }] : []
+    const rawNumber = tag(item, 'itunes:episode')
+    const number = /^\d+$/.test(rawNumber) ? Number(rawNumber) : null
+    return audioUrl && slug && title
+      ? [{ slug, title, audioUrl, pageUrl, coverUrl, chaptersUrl, transcriptUrl, number, series }]
+      : []
   })
 }
 
 export async function fetchCastopodFeed() {
-  const feeds = await Promise.all(FEED_URLS.map(async (url) => {
+  const feeds = await Promise.all(FEED_URLS.map(async (url, index) => {
     const response = await fetch(url, { headers: { Accept: 'application/rss+xml, application/xml;q=0.9' } })
     if (!response.ok) throw new Error(`Castopod feed returned ${response.status}: ${url}`)
-    return parseCastopodFeed(await response.text())
+    return parseCastopodFeed(await response.text(), index === 0 ? 'main' : 'ita')
   }))
   return feeds.flat()
 }
