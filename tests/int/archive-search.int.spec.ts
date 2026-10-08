@@ -80,6 +80,18 @@ describe('keyword search', () => {
     expect(hit.speaker).toBe('Paolo Spada')
   })
 
+  it('does not serve passages from an episode that is not published', async () => {
+    // The indexer prunes only within the published set, so unpublishing leaves
+    // a passage behind. Search has to be the thing that refuses it, or a draft
+    // transcript is readable through the public endpoint before publication.
+    const hidden = await publishEpisode('hidden-one', 'Hidden one')
+    await addChunk(hidden.id, 'hidden-one', 'Hidden one', 'A secret about quorum sensing in councils.', 0)
+    expect((await searchKeyword('quorum sensing', 5)).length).toBeGreaterThan(0)
+
+    await payload.update({ collection: 'episodes', id: hidden.id, data: { _status: 'draft' }, overrideAccess: true })
+    expect(await searchKeyword('quorum sensing', 5)).toEqual([])
+  })
+
   it('does not match an episode that never says the words', async () => {
     const hits = await searchKeyword('assembly deliberate', 5)
     expect(hits.map((hit) => hit.episodeSlug)).toContain('assemblies-two')

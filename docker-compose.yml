@@ -6,6 +6,8 @@ services:
       dockerfile: Dockerfile
     container_name: democracy-innovators-podcast
     restart: unless-stopped
+    mem_limit: 1g
+    mem_reservation: 256m
     user: "0:0"
     ports:
       - "127.0.0.1:8098:3000"

@@ -15,6 +15,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const updated = new Date(item.updatedAt)
     return !latest || updated > latest ? updated : latest
   }, undefined)
-  const fixed = ['', '/episodes', '/people', '/topics', '/map', '/listen', '/about', '/contact', '/subscribe', '/privacy'].map((path) => ({ url: `${origin}${path}`, lastModified: siteUpdated }))
+  const fixed = ['', '/episodes', '/people', '/topics', '/map', '/listen', '/about', '/contact', '/subscribe', '/developers', '/privacy'].map((path) => ({ url: `${origin}${path}`, lastModified: siteUpdated }))
   return [...fixed, ...episodes.map((item) => ({ url: `${origin}/episode/${item.slug}`, lastModified: new Date(item.updatedAt) })), ...guests.map((item) => ({ url: `${origin}/people/${item.slug}`, lastModified: new Date(item.updatedAt) })), ...topics.map((item) => ({ url: `${origin}/topics/${item.slug}`, lastModified: new Date(item.updatedAt) }))]
 }

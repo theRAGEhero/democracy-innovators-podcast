@@ -20,6 +20,7 @@ export function SiteFooter() {
         <Link href="/listen">Listen</Link>
         <Link href="/rss.xml">RSS</Link>
         <Link href="/contact">Contact</Link>
+        <Link href="/developers">Developers</Link>
         <Link href="/privacy">Privacy &amp; Cookies</Link>
       </nav>
 

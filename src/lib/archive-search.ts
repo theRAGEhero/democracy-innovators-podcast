@@ -188,6 +188,13 @@ async function chaptersBySlug(slugs: string[]): Promise<Map<string, Chapter[]>> 
   return map
 }
 
+/** Slugs of episodes that are actually published, for filtering passages whose
+ *  episode has since been unpublished. */
+async function publishedSlugs(): Promise<Set<string>> {
+  const result = await db().execute("SELECT slug FROM episodes WHERE _status = 'published'")
+  return new Set(result.rows.map((row) => String(row.slug)))
+}
+
 export async function searchKeyword(query: string, limit = 8): Promise<Passage[]> {
   const match = toMatchQuery(query)
   if (!match) return []
@@ -200,6 +207,10 @@ export async function searchKeyword(query: string, limit = 8): Promise<Passage[]
                  bm25(archive_chunks_fts) AS rank
           FROM archive_chunks_fts
           JOIN archive_chunks c ON c.id = archive_chunks_fts.rowid
+          -- Passages outlive the episode's publication: build-embeddings only
+          -- prunes within the published set, so unpublishing leaves the text
+          -- indexed. Without this join a draft is publicly searchable.
+          JOIN episodes e ON e.slug = c.episode_slug AND e._status = 'published'
           WHERE archive_chunks_fts MATCH ?
           ORDER BY rank
           LIMIT ?`,
@@ -246,7 +257,11 @@ export async function searchSemantic(
     }))
 
   const chunks = await loadEmbeddedChunks(EMBEDDING_MODEL)
-  const ranked = scoreChunks(chunks, vector, query)
+  // Same reason as the keyword path, applied where the vectors live: the chunk
+  // cache carries no publication status, so the published set is read once and
+  // anything outside it is dropped before scoring.
+  const live = await publishedSlugs()
+  const ranked = scoreChunks(chunks.filter((chunk) => live.has(chunk.episodeSlug)), vector, query)
   const chosen = selectEvidenceChunks(
     ranked.filter((chunk) => chunk.score >= MIN_RETRIEVAL_SCORE),
     Math.max(1, Math.min(limit, 25)),
