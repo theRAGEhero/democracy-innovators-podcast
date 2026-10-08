@@ -11,7 +11,7 @@
 
 export const dynamic = 'force-dynamic'
 
-const FALLBACK = 'https://www.paypal.com/ncp/payment/7KCR9XBSCQVMG'
+const FALLBACK = 'https://paypal.me/9minuti'
 
 export function GET() {
   const target = process.env.PAYPAL_URL?.trim() || FALLBACK
