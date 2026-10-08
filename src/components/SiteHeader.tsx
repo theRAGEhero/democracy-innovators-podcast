@@ -1,18 +1,22 @@
-import Link from 'next/link'
-
 import { HeaderNav } from './HeaderNav'
 import { ThemeToggle } from './ThemeToggle'
+import Link from 'next/link'
+import { supportUrl } from '@/lib/platforms'
 
 // The map is a way of reading the topics, not a section of its own, so it sits
 // under Topics rather than beside it. People is still published and still linked
 // from every episode; it just no longer competes for a slot in the top bar.
+//
+// Donate is listed as `secondary`, which hides it above 620px and shows it in
+// the mobile sheet — the exact inverse of .support-link below. Between the two,
+// the donation link is reachable at every width without ever appearing twice.
 const navItems = [
   { href: '/episodes', label: 'Episodes' },
   { href: '/topics', label: 'Topics', children: [{ href: '/map', label: 'Map' }] },
   { href: '/listen', label: 'Listen' },
   { href: '/about', label: 'About' },
   { href: '/mcp', label: 'MCP' },
-  { href: '/contact', label: 'Contact', secondary: true },
+  { href: supportUrl, label: 'Donate', secondary: true, external: true },
 ]
 
 export function SiteHeader() {
@@ -20,7 +24,7 @@ export function SiteHeader() {
     <header className="site-header">
       <Link className="wordmark" href="/">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="wordmark-logo" src="/logo.png" alt="" width={40} height={40} />
+        <img className="wordmark-logo" src="/logo.png" alt="" width={54} height={54} />
         <span className="wordmark-text">
           <span>Democracy</span>
           <span>Innovators</span>
@@ -38,9 +42,11 @@ export function SiteHeader() {
           <span>Search</span>
         </Link>
         <ThemeToggle />
-        <Link className="support-link" href="/subscribe">
-          Subscribe
-        </Link>
+        {/* A plain anchor, not <Link>: /paypal is a route handler that answers
+            with a redirect, so there is no RSC payload for Next to prefetch. */}
+        <a className="support-link" href={supportUrl} rel="noreferrer" target="_blank">
+          Donate
+        </a>
       </div>
     </header>
   )

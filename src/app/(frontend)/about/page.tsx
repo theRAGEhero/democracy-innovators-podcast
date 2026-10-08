@@ -5,11 +5,13 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 
+import { ContactForm } from '@/components/ContactForm'
 import { getEpisodes } from '@/lib/content'
 
 export const metadata: Metadata = {
   title: 'About',
-  description: 'About Democracy Innovators Podcast, its editorial mission and the two people who make it.',
+  description:
+    'About Democracy Innovators Podcast, its editorial mission, the two people who make it, and how to reach them.',
   alternates: { canonical: '/about' },
 }
 
@@ -103,7 +105,7 @@ export default async function AboutPage() {
             <span>Published since March 2025</span>
             <span>Full transcripts, chapters and citations</span>
           </div>
-          <a href="mailto:ale@9minuti.it">Contact the podcast</a>
+          <a href="#contact">Contact the podcast</a>
         </aside>
       </div>
 
@@ -151,6 +153,18 @@ export default async function AboutPage() {
             <span className="text-link">Read the blog ↗</span>
           </div>
         </a>
+      </section>
+
+      {/* Formerly its own /contact page, which held nothing but this block.
+          /contact now redirects to #contact. */}
+      <section className="contact-layout about-contact" id="contact">
+        <div className="contact-copy">
+          <p className="section-label">Editorial inbox</p>
+          <h2>Useful context helps us respond faster.</h2>
+          <p>Tell us which episode, person, project or topic your message relates to. Do not send sensitive personal information through this form.</p>
+          <a href="mailto:ale@9minuti.it">ale@9minuti.it</a>
+        </div>
+        <ContactForm />
       </section>
 
       <section className="about-next">

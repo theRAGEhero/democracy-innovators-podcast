@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
-type NavItem = { href: string; label: string; secondary?: boolean; children?: NavItem[] }
+type NavItem = { href: string; label: string; secondary?: boolean; external?: boolean; children?: NavItem[] }
 
 // Primary navigation. On desktop it is a plain row; on mobile it collapses into
 // a disclosure menu so links are not hidden in a horizontal scroll strip.
@@ -57,16 +57,23 @@ export function HeaderNav({ items }: { items: NavItem[] }) {
   }, [])
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`)
-  const link = (item: NavItem, className?: string) => (
-    <Link
-      className={className}
-      key={item.href}
-      href={item.href}
-      aria-current={isActive(item.href) ? 'page' : undefined}
-    >
-      {item.label}
-    </Link>
-  )
+  const link = (item: NavItem, className?: string) =>
+    item.external ? (
+      // Leaves the site (or, like /paypal, is a redirect with no RSC payload),
+      // so it is a plain anchor rather than a prefetching <Link>.
+      <a className={className} key={item.href} href={item.href} rel="noreferrer" target="_blank">
+        {item.label}
+      </a>
+    ) : (
+      <Link
+        className={className}
+        key={item.href}
+        href={item.href}
+        aria-current={isActive(item.href) ? 'page' : undefined}
+      >
+        {item.label}
+      </Link>
+    )
 
   return (
     <>

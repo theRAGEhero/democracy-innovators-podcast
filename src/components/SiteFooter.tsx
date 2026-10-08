@@ -19,7 +19,7 @@ export function SiteFooter() {
         <Link href="/search">Search</Link>
         <Link href="/listen">Listen</Link>
         <Link href="/rss.xml">RSS</Link>
-        <Link href="/contact">Contact</Link>
+        <Link href="/about#contact">Contact</Link>
         <Link href="/mcp">MCP</Link>
         <Link href="/privacy">Privacy &amp; Cookies</Link>
       </nav>

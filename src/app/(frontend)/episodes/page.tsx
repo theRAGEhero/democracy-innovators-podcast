@@ -117,7 +117,7 @@ export default async function EpisodesPage({
               </>
             ) : (
               <>
-                The archive could not be loaded. Try again, or <Link href="/contact">let us know</Link>.
+                The archive could not be loaded. Try again, or <Link href="/about#contact">let us know</Link>.
               </>
             )}
           </p>

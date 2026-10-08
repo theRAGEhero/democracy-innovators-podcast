@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { PlayEpisodeButton } from '@/components/PlayEpisodeButton'
 import { normalizeChapters } from '@/lib/chapters'
 import { extractCastopodEpisodeUrl } from '@/lib/embeds'
+import { supportUrl } from '@/lib/platforms'
 
 export const revalidate = 3600
 
@@ -42,10 +43,16 @@ export default async function HomePage() {
           { '@type': 'Person', name: 'Alessandro Oppo' },
           { '@type': 'Person', name: 'Carlo Michaelis' },
         ],
+        // The publisher's own accounts, which is the node search engines read
+        // for "these profiles are really ours". The PodcastSeries below keeps
+        // only the places the show is distributed.
         sameAs: [
           'https://open.spotify.com/show/7e1DjGuFaHZlgDc6e7xmnr',
           'https://www.youtube.com/@DemocracyInnovatorsPodcast',
           'https://podcast.democracyinnovators.com/@podcast',
+          'https://bsky.app/profile/democracyinnovator.bsky.social',
+          'https://www.linkedin.com/company/democracy-innovators',
+          'https://x.com/DemoInnovators',
         ],
       },
       {
@@ -114,6 +121,17 @@ export default async function HomePage() {
             <EpisodeRow episode={episode} key={episode.id} />
           ))}
         </div>
+      </section>
+
+      {/* Deliberately after the episodes rather than in the hero: it asks only
+          once the page has given the reader something. */}
+      <section className="home-support">
+        <div>
+          <p className="section-label">Support</p>
+          <h2>No sponsors, no paywall.</h2>
+          <p>Every episode is free to listen to, with a full transcript anyone can search and cite. Donations cover the hosting and transcription that keep it that way.</p>
+        </div>
+        <a className="primary-button" href={supportUrl} rel="noreferrer" target="_blank">Donate</a>
       </section>
 
       <MobilePlatformBar latest={featured?.audioUrl ? { id: featured.id, slug: featured.slug, title: featured.title, audioUrl: featured.audioUrl, coverUrl: featured.squareCoverUrl || featured.featureImageUrl, castopodUrl: extractCastopodEpisodeUrl(featured.html), chapters: normalizeChapters(featured.chapters) } : null} />

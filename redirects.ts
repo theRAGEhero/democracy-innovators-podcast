@@ -40,6 +40,12 @@ export const redirects: NextConfig['redirects'] = async () => {
     { source: '/content/images/:path*', destination: 'https://old.democracyinnovators.com/content/images/:path*', permanent: true },
     // The MCP page moved to match the label in the navigation.
     { source: '/developers', destination: '/mcp', permanent: true },
+    // Two pages folded into their neighbours. Both were in the sitemap and
+    // served their own canonical, so they are live indexed URLs. These rules
+    // also stop the bare paths falling through to the (frontend)/[slug]
+    // Payload catch-all, where the seed data still carries a 'contact' page.
+    { source: '/contact', destination: '/about#contact', permanent: true },
+    { source: '/subscribe', destination: '/listen#newsletter', permanent: true },
   ]
 
   return [internetExplorerRedirect, ...legacyGhostRedirects]

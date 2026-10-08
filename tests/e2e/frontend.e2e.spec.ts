@@ -178,7 +178,9 @@ test.describe('Frontend', () => {
     // first link on screen.
     const box = await nav.boundingBox()
     expect(box!.height).toBeGreaterThan(400)
-    for (const label of ['Episodes', 'Listen', 'Contact']) {
+    // Donate is the mobile-only item: the header's .support-link pill is
+    // hidden below 620px, so the nav sheet is the only place it appears.
+    for (const label of ['Episodes', 'Listen', 'Donate']) {
       await expect(nav.getByRole('link', { name: label, exact: true })).toBeInViewport()
     }
     await page.keyboard.press('Escape')

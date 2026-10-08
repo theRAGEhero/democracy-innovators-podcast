@@ -76,7 +76,7 @@ export default function DevelopersPage() {
         </p>
 
         <p>
-          <Link className="text-link" href="/contact">Get in touch <span aria-hidden="true">→</span></Link>
+          <Link className="text-link" href="/about#contact">Get in touch <span aria-hidden="true">→</span></Link>
         </p>
       </article>
     </main>
