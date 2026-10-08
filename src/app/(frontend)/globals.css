@@ -1252,7 +1252,10 @@ body::before {
 .related-episodes { margin-top: 70px; padding-top: 40px; border-top: 1px solid var(--rule); }
 .related-episodes h2 { margin: 8px 0 26px; font-size: 1.9rem; font-weight: 400; }
 .related-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
-.related-card { display: flex; flex-direction: column; gap: 10px; padding: 22px; border: 1px solid var(--rule); text-decoration: none; transition: border-color .15s ease, background .15s ease; }
+.related-card { display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--rule); text-decoration: none; transition: border-color .15s ease, background .15s ease; }
+.related-card-media { display: block; aspect-ratio: 16 / 9; overflow: hidden; background: var(--blue); }
+.related-card-body { display: flex; flex-direction: column; gap: 10px; flex: 1; padding: 22px; }
+.related-card:hover .episode-image { transform: scale(1.025); }
 .related-card:hover { border-color: var(--ink); background: color-mix(in srgb, var(--blue) 4%, transparent); }
 .related-card h3 { margin: 0; font-size: 1.12rem; font-weight: 500; line-height: 1.25; }
 .related-card p { margin: 0; color: var(--muted); font-size: .88rem; line-height: 1.5; }
