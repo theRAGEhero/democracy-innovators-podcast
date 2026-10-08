@@ -134,27 +134,6 @@ export default async function AboutPage() {
         </div>
       </section>
 
-      <section className="about-elsewhere">
-        <p className="section-label">Elsewhere</p>
-        <a className="blog-card" href="https://alexoppo.com" rel="noreferrer" target="_blank">
-          <div className="blog-card-image">
-            {photo('alexoppo.jpg') ? (
-              <Image alt="" src={photo('alexoppo.jpg')!} width={640} height={420} sizes="(max-width: 900px) 100vw, 320px" />
-            ) : (
-              <span aria-hidden="true">AO</span>
-            )}
-          </div>
-          <div className="blog-card-body">
-            <h3>alexoppo.com</h3>
-            <p>
-              Alessandro&rsquo;s own site: essays on civic technology and democratic innovation, write-ups of
-              the projects behind them, and a long series on blockchains and history.
-            </p>
-            <span className="text-link">Read the blog ↗</span>
-          </div>
-        </a>
-      </section>
-
       {/* Formerly its own /contact page, which held nothing but this block.
           /contact now redirects to #contact. */}
       <section className="contact-layout about-contact" id="contact">
