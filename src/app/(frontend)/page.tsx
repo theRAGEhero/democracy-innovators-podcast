@@ -130,7 +130,7 @@ export default async function HomePage() {
       <section className="home-support">
         <div>
           <p className="section-label">Support</p>
-          <h2>No sponsors, no paywall.</h2>
+          <h2>The archive stays open.</h2>
           <p>Every episode is free to listen to, with a full transcript anyone can search and cite. Donations cover the hosting and transcription that keep it that way.</p>
         </div>
         <a className="primary-button" href={supportUrl} rel="noreferrer" target="_blank">Donate</a>
