@@ -37,6 +37,10 @@ export const listenPlatforms: PlatformLink[] = [
 export const socialPlatforms: PlatformLink[] = [
   { label: 'Bluesky', href: 'https://bsky.app/profile/democracyinnovator.bsky.social', hint: '@democracyinnovator' },
   { label: 'LinkedIn', href: 'https://www.linkedin.com/company/democracy-innovators', hint: 'Company page' },
+  // Two Telegram presences, so the rows name which is which: a broadcast
+  // channel anyone can follow, and a group anyone can talk in.
+  { label: 'Telegram channel', href: 'https://t.me/democracyinnovatorspodcast', hint: 'New episodes' },
+  { label: 'Telegram group', href: 'https://t.me/democracyinnovators', hint: 'Open discussion' },
   { label: 'X', href: 'https://x.com/DemoInnovators', hint: '@DemoInnovators' },
   // Also listed under Listen: it is the Castopod feed and the Fediverse account
   // at once, and someone looking for either expects to find it in that group.

@@ -7,7 +7,7 @@ import { listenPlatforms, socialPlatforms, supportUrl, type PlatformLink } from 
 export const metadata: Metadata = {
   title: 'Listen & Follow',
   description:
-    'Every place to listen to and follow the Democracy Innovators Podcast — Apple Podcasts, Spotify, YouTube, the Fediverse, RSS, newsletter, Bluesky, LinkedIn and more.',
+    'Every place to listen to and follow the Democracy Innovators Podcast — Apple Podcasts, Spotify, YouTube, the Fediverse, RSS, newsletter, Bluesky, LinkedIn, Telegram and more.',
   alternates: { canonical: '/listen' },
 }
 

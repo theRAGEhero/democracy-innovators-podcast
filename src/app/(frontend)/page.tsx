@@ -53,6 +53,8 @@ export default async function HomePage() {
           'https://bsky.app/profile/democracyinnovator.bsky.social',
           'https://www.linkedin.com/company/democracy-innovators',
           'https://x.com/DemoInnovators',
+          'https://t.me/democracyinnovatorspodcast',
+          'https://t.me/democracyinnovators',
         ],
       },
       {
