@@ -47,10 +47,10 @@ const editors: Editor[] = [
   {
     name: 'Carlo Michaelis',
     initials: 'CM',
-    role: 'Co-founder',
+    role: 'Producer and Co-Founder',
     blurb:
-      'Came to the podcast from the question that has followed him since a school politics lesson in Germany: '
-      + 'if a hundred people can meet and decide together, what do eighty million do instead?',
+      'Edits episodes, manages social media, and oversees strategic development. Based in Sweden, Carlo '
+      + 'manages software development and researches how democratic governance can become scalable and efficient.',
     file: 'carlo-michaelis.jpg',
     links: [{ label: 'LinkedIn', href: 'https://www.linkedin.com/in/carlo-michaelis/' }],
   },
