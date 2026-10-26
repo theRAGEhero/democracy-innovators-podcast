@@ -1,0 +1,16 @@
+# Installed at /etc/systemd/system/, started by dip-website-sync.timer.
+#
+# Root on purpose: the chapter importer reads SRTs from the Nextcloud volume,
+# which sits under /var/lib/docker (0710 root:root), and both scripts write the
+# site's SQLite file under runtime/, owned by root like the rest of the repo.
+[Unit]
+Description=Democracy Innovators website: sync published episodes from the Castopod feed
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/democracy-innovators-podcast
+ExecStart=/root/democracy-innovators-podcast/scripts/sync-published.sh
+StandardOutput=journal
+StandardError=journal

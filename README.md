@@ -91,6 +91,25 @@ npm run episodes:summarize -- --apply
 
 Take a backup before any command that writes to SQLite and avoid concurrent writers.
 
+### After an episode is published
+
+`audio:sync` and `chapters:castopod` no longer need to be run by hand. A systemd
+timer runs `scripts/sync-published.sh` every 15 minutes, which runs both with
+`--apply`: the number, series, audio URL and square cover come from the Castopod
+feed, and the chapter anchors from the SRT on the Nextcloud share. Both scripts
+skip episodes that already have what they need, so an idle run costs one query
+and two feed fetches.
+
+```bash
+cp deploy/systemd/dip-website-sync.{service,timer} /etc/systemd/system/
+systemctl daemon-reload && systemctl enable --now dip-website-sync.timer
+systemctl list-timers dip-website-sync.timer     # next run
+journalctl -u dip-website-sync -n 30 --no-pager  # last run
+```
+
+A draft episode has a **Preview** button in the admin form; the public page and
+the REST endpoint keep drafts hidden.
+
 ## API
 
 Payload exposes a REST API at `/api/<collection>` and GraphQL at `/api/graphql`. All

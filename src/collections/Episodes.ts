@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 import { authenticated } from '@/access/authenticated'
 import { authenticatedOrPublished } from '@/access/authenticatedOrPublished'
+import { generatePreviewPath } from '@/lib/generatePreviewPath'
 
 export const Episodes: CollectionConfig = {
   slug: 'episodes',
@@ -16,6 +17,14 @@ export const Episodes: CollectionConfig = {
   },
   admin: {
     defaultColumns: ['title', 'publishedAt', 'updatedAt'],
+    // The Preview button. A draft episode is otherwise visible nowhere but this
+    // form: the public page and the REST endpoint both hide it, by design.
+    preview: (data, { req }) =>
+      generatePreviewPath({
+        slug: data?.slug as string,
+        collection: 'episodes',
+        req,
+      }),
     useAsTitle: 'title',
   },
   fields: [

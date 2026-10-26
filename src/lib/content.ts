@@ -93,13 +93,23 @@ export async function getEpisodeContext(episode: {
   }
 }
 
-export async function getEpisode(slug: string) {
+/**
+ * One episode by slug. Published only, unless `draft` is set: that is the
+ * admin's Preview button (next/preview turns draftMode on after checking the
+ * secret and the session), and then the newest draft version is returned with
+ * access control bypassed, exactly as queryPageBySlug does for pages.
+ */
+export async function getEpisode(slug: string, { draft = false }: { draft?: boolean } = {}) {
   const payload = await getPayload({ config })
   const result = await payload.find({
     collection: 'episodes',
     depth: 2,
     limit: 1,
-    where: { and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }] },
+    draft,
+    overrideAccess: draft,
+    where: draft
+      ? { slug: { equals: slug } }
+      : { and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }] },
   }).catch(() => emptyResult)
   return result.docs[0] ?? null
 }

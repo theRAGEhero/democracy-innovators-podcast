@@ -13,6 +13,7 @@ import { MobileEpisodeBar } from '@/components/MobileEpisodeBar'
 import { getServerSideURL } from '@/lib/getURL'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { draftMode } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { PlayEpisodeButton } from '@/components/PlayEpisodeButton'
 import { PlayFromQuery } from '@/components/PlayFromQuery'
@@ -26,7 +27,8 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const episode = await getEpisode((await params).slug)
+  const { isEnabled: draft } = await draftMode()
+  const episode = await getEpisode((await params).slug, { draft })
   if (!episode) return { robots: { index: false, follow: false } }
   const description = metaDescription(episode.excerpt)
   return {
@@ -48,7 +50,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 }
 
 export default async function EpisodePage({ params }: { params: Promise<{ slug: string }> }) {
-  const episode = await getEpisode((await params).slug)
+  const { isEnabled: draft } = await draftMode()
+  const episode = await getEpisode((await params).slug, { draft })
   if (!episode) notFound()
 
   const guests = (episode.guests || []).filter((guest) => typeof guest === 'object')

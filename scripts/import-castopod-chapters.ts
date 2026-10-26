@@ -43,19 +43,40 @@ async function main() {
   const refresh = process.argv.includes('--refresh')
   const db = createClient({ url: process.env.DATABASE_URL || 'file:./runtime/database/payload.db' })
 
-  const [feed, result] = await Promise.all([
-    fetchCastopodFeed(),
-    db.execute("SELECT id, title, slug, html, chapters, audio_url AS audioUrl, transcript_text AS transcriptText FROM episodes WHERE _status = 'published'"),
-  ])
-  const folders = scanSrtFolders().filter((folder) => folder.srt)
-  // Read once for the whole run, not per episode: it is a single query against
-  // another project's database and takes half a minute.
-  const deepgram = loadDeepgramEpisodes()
+  const result = await db.execute("SELECT id, title, slug, html, chapters, audio_url AS audioUrl, transcript_text AS transcriptText FROM episodes WHERE _status = 'published'")
 
   const counts: Record<AnchorMethod | 'skipped' | 'nochapters', number> = { inline: 0, srt: 0, none: 0, skipped: 0, nochapters: 0 }
   let updated = 0
 
-  for (const row of result.rows) {
+  // Decide what needs work before fetching anything. This runs unattended every
+  // quarter hour (scripts/sync-published.sh), and on most runs every episode is
+  // already anchored: that run must cost one query, not two feeds, a walk of the
+  // share and the half-minute Deepgram load.
+  const pending = result.rows.flatMap((row) => {
+    const existing = normalizeChapters(typeof row.chapters === 'string' && row.chapters ? JSON.parse(row.chapters) : [])
+    if (existing.some((chapter) => chapter.anchor) && !refresh) {
+      counts.skipped += 1
+      return []
+    }
+    return [{ row, existing }]
+  })
+  if (!pending.length) {
+    console.log(`Nothing to anchor: all ${counts.skipped} published episodes already have anchors.`)
+    db.close()
+    return
+  }
+
+  const feed = await fetchCastopodFeed()
+  const folders = scanSrtFolders().filter((folder) => folder.srt)
+  // Read once for the whole run, not per episode: it is a single query against
+  // another project's database and takes half a minute. And read only when an
+  // episode gets as far as needing it: two published episodes have no chapters
+  // anywhere, stay pending forever, and must not cost that half minute every
+  // quarter hour.
+  let deepgram: ReturnType<typeof loadDeepgramEpisodes> | undefined
+  const spokenEpisodes = () => (deepgram === undefined ? (deepgram = loadDeepgramEpisodes()) : deepgram)
+
+  for (const { row, existing } of pending) {
     const episode = {
       id: Number(row.id),
       title: String(row.title || ''),
@@ -63,11 +84,6 @@ async function main() {
       html: String(row.html || ''),
       audioUrl: String(row.audioUrl || ''),
       transcriptText: String(row.transcriptText || ''),
-    }
-    const existing = normalizeChapters(typeof row.chapters === 'string' && row.chapters ? JSON.parse(row.chapters) : [])
-    if (existing.some((chapter) => chapter.anchor) && !refresh) {
-      counts.skipped += 1
-      continue
     }
 
     const match = findCastopodEpisode(episode, feed)
@@ -124,7 +140,7 @@ async function main() {
     // the SRT everywhere *loses* anchors on eleven episodes — Deepgram splits
     // speech differently, and where the SRT already works it works better — so
     // whichever finds more keeps the episode.
-    const spoken = deepgram?.get(audioKey(episode.audioUrl) || '')
+    const spoken = spokenEpisodes()?.get(audioKey(episode.audioUrl) || '')
     if (spoken) {
       const alternative = computeAnchors(
         chapters,
