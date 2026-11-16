@@ -2,6 +2,7 @@ import { getPayload, type Payload } from 'payload'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import config from '@/payload.config'
+import type { NewsletterSubscriber } from '@/payload-types'
 
 // A subscriber list is the one thing on this site that must never be readable
 // by an anonymous caller, and Payload's generated REST endpoints answer with
@@ -16,7 +17,7 @@ beforeAll(async () => {
   payload = await getPayload({ config: await config })
 })
 
-async function subscriber(email: string, status = 'confirmed') {
+async function subscriber(email: string, status: NewsletterSubscriber['status'] = 'confirmed') {
   return payload.create({
     collection: 'newsletter-subscribers',
     data: { email, status, source: 'web', consentAt: new Date().toISOString() },
@@ -84,7 +85,7 @@ describe('one mailing per episode', () => {
     const id = await episode('mailing-guard-one')
     await payload.create({
       collection: 'newsletter-mailings',
-      data: { title: 'First', kind: 'episode', episode: id },
+      data: { title: 'First', kind: 'episode', episode: id, status: 'draft' },
       overrideAccess: true,
     })
     // The unique index only exists in the hand-written migration, so under
@@ -92,7 +93,7 @@ describe('one mailing per episode', () => {
     await expect(
       payload.create({
         collection: 'newsletter-mailings',
-        data: { title: 'Second', kind: 'episode', episode: id },
+        data: { title: 'Second', kind: 'episode', episode: id, status: 'draft' },
         overrideAccess: true,
       }),
     ).rejects.toThrow(/already has a mailing/)
@@ -102,12 +103,12 @@ describe('one mailing per episode', () => {
     const id = await episode('mailing-guard-two')
     await payload.create({
       collection: 'newsletter-mailings',
-      data: { title: 'First', kind: 'episode', episode: id },
+      data: { title: 'First', kind: 'episode', episode: id, status: 'draft' },
       overrideAccess: true,
     })
     const second = await payload.create({
       collection: 'newsletter-mailings',
-      data: { title: 'Second', kind: 'episode', episode: id, allowDuplicate: true },
+      data: { title: 'Second', kind: 'episode', episode: id, allowDuplicate: true, status: 'draft' },
       overrideAccess: true,
     })
     expect(second.id).toBeTruthy()
@@ -117,7 +118,7 @@ describe('one mailing per episode', () => {
     for (const title of ['Moved one', 'Moved two']) {
       const created = await payload.create({
         collection: 'newsletter-mailings',
-        data: { title, kind: 'announcement' },
+        data: { title, kind: 'announcement', status: 'draft' },
         overrideAccess: true,
       })
       expect(created.id).toBeTruthy()
@@ -128,7 +129,7 @@ describe('one mailing per episode', () => {
     await expect(
       payload.create({
         collection: 'newsletter-mailings',
-        data: { title: 'Nothing attached', kind: 'episode' },
+        data: { title: 'Nothing attached', kind: 'episode', status: 'draft' },
         overrideAccess: true,
       }),
     ).rejects.toThrow()
