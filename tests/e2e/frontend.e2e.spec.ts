@@ -149,6 +149,37 @@ test.describe('Frontend', () => {
     expect(back).toBeLessThan(292)
   })
 
+  test('the newsletter form on /listen is first-party and validates consent', async ({ page }) => {
+    await page.goto(`${BASE}/listen#newsletter`)
+    const form = page.locator('form.newsletter-form')
+    await expect(form).toBeVisible()
+    // It used to be a Ghost Portal form posting to a host that was never set
+    // up, so every submission failed. Nothing third-party should remain.
+    await expect(form).not.toHaveAttribute('data-members-form', /.*/)
+    expect(await page.locator('script[src*="ghost"]').count()).toBe(0)
+
+    // The consent box is the record of the lawful basis, so it cannot be
+    // bypassed.
+    await page.fill('#newsletter-email', 'e2e@example.org')
+    await form.locator('button[type="submit"]').click()
+    await expect(page.locator('#newsletter-email')).toBeFocused()
+    expect(await page.locator('.newsletter-state').innerText()).toBe('')
+  })
+
+  test('a bad confirmation link explains itself instead of erroring', async ({ page }) => {
+    await page.goto(`${BASE}/newsletter/confirm?t=not-a-real-token`)
+    await expect(page.locator('h1')).toContainText(/already been used/i)
+    await expect(page.getByRole('link', { name: /sign up again/i })).toBeVisible()
+  })
+
+  test('a bad unsubscribe link explains itself, and a good one changes nothing on load', async ({ page }) => {
+    await page.goto(`${BASE}/newsletter/unsubscribe?s=1&t=forged`)
+    await expect(page.locator('h1')).toContainText(/not valid/i)
+    // The valid-link page must render a button rather than act: mail scanners
+    // follow these URLs without anybody clicking.
+    expect(await page.locator('button', { hasText: /unsubscribe me/i }).count()).toBe(0)
+  })
+
   test('sitemap lists episode URLs', async ({ request }) => {
     const response = await request.get(`${BASE}/sitemap.xml`)
     expect(response.ok()).toBeTruthy()

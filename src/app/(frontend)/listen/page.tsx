@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import Script from 'next/script'
 
+import { NewsletterForm } from '@/components/NewsletterForm'
 import { listenPlatforms, socialPlatforms, supportUrl, type PlatformLink } from '@/lib/platforms'
 
 export const metadata: Metadata = {
@@ -17,7 +17,8 @@ export const metadata: Metadata = {
 //
 // The newsletter used to live on its own /subscribe page, whose other half was
 // a platform list this page already carried in full. Only the signup form was
-// unique, so it moved here and /subscribe now redirects to #newsletter.
+// unique, so it moved here and /subscribe now redirects to #newsletter. The form
+// itself was Ghost's until the list moved into this site.
 const groups: { title: string; links: (PlatformLink & { internal?: boolean })[] }[] = [
   { title: 'Listen', links: listenPlatforms },
   { title: 'Social', links: socialPlatforms },
@@ -64,47 +65,12 @@ export default function ListenPage() {
 
       <section className="linktree-group" id="newsletter">
         <h2 className="section-label">Newsletter</h2>
-        <form className="newsletter-form linktree-newsletter" data-members-form="subscribe">
-          <input data-members-label type="hidden" value="Stream newsletter signup 2026-06" />
-          <label htmlFor="newsletter-email">Email address</label>
-          <div className="newsletter-fields">
-            <input
-              autoComplete="email"
-              data-members-email
-              id="newsletter-email"
-              name="email"
-              placeholder="you@example.org"
-              required
-              type="email"
-            />
-            <button type="submit">Subscribe</button>
-          </div>
-          <label className="newsletter-consent">
-            <input required type="checkbox" />
-            <span>I want to receive the Democracy Innovators newsletter by email. I can unsubscribe at any time.</span>
-          </label>
-          <p className="newsletter-fineprint">Managed through our Ghost publication at old.democracyinnovators.com. See the <Link href="/privacy">privacy notice</Link>.</p>
-          <p aria-live="polite" className="newsletter-state newsletter-loading">Sending confirmation…</p>
-          <p aria-live="polite" className="newsletter-state newsletter-success">Check your inbox to confirm your subscription.</p>
-          <p aria-live="polite" className="newsletter-state newsletter-error" data-members-error>We could not start the subscription. Please try again.</p>
-        </form>
+        <NewsletterForm />
       </section>
 
       <p className="linktree-foot">
         <Link href="/episodes">Browse every episode →</Link>
       </p>
-
-      {/* Ghost Portal drives the form above. It is the only third-party script
-          on this page, and it loads after the page is interactive. */}
-      <Script
-        data-api="https://old.democracyinnovators.com/ghost/api/content/"
-        data-ghost="https://old.democracyinnovators.com/"
-        data-i18n="true"
-        data-key="aca0a8916a7d74049348f9d1c3"
-        data-locale="en"
-        src="https://cdn.jsdelivr.net/ghost/portal@~2.68/umd/portal.min.js"
-        strategy="afterInteractive"
-      />
     </main>
   )
 }
