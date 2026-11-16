@@ -75,8 +75,11 @@ export interface Config {
     projects: Project;
     organizations: Organization;
     sources: Source;
+    'newsletter-mailings': NewsletterMailing;
+    'newsletter-subscribers': NewsletterSubscriber;
     'contact-submissions': ContactSubmission;
     comments: Comment;
+    'newsletter-deliveries': NewsletterDelivery;
     'page-views': PageView;
     'api-limits': ApiLimit;
     pages: Page;
@@ -109,8 +112,11 @@ export interface Config {
     projects: ProjectsSelect<false> | ProjectsSelect<true>;
     organizations: OrganizationsSelect<false> | OrganizationsSelect<true>;
     sources: SourcesSelect<false> | SourcesSelect<true>;
+    'newsletter-mailings': NewsletterMailingsSelect<false> | NewsletterMailingsSelect<true>;
+    'newsletter-subscribers': NewsletterSubscribersSelect<false> | NewsletterSubscribersSelect<true>;
     'contact-submissions': ContactSubmissionsSelect<false> | ContactSubmissionsSelect<true>;
     comments: CommentsSelect<false> | CommentsSelect<true>;
+    'newsletter-deliveries': NewsletterDeliveriesSelect<false> | NewsletterDeliveriesSelect<true>;
     'page-views': PageViewsSelect<false> | PageViewsSelect<true>;
     'api-limits': ApiLimitsSelect<false> | ApiLimitsSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
@@ -402,6 +408,93 @@ export interface MapPoint {
   createdAt: string;
 }
 /**
+ * Episode mailings. Build, preview, send a test, then send.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletter-mailings".
+ */
+export interface NewsletterMailing {
+  id: number;
+  /**
+   * Internal label. Not the subject line.
+   */
+  title: string;
+  kind: 'episode' | 'announcement';
+  episode?: (number | null) | Episode;
+  /**
+   * Filled in by Build. At least 10 characters.
+   */
+  subject?: string | null;
+  /**
+   * The line the inbox shows after the subject.
+   */
+  preheader?: string | null;
+  status: 'draft' | 'ready' | 'sending' | 'sent' | 'paused' | 'failed';
+  /**
+   * Frozen at Build. This is what is sent.
+   */
+  bodyHtml?: string | null;
+  bodyText?: string | null;
+  /**
+   * Gmail clips the HTML part around 102,000 bytes, hiding the footer. Build refuses over 90,000.
+   */
+  htmlBytes?: number | null;
+  /**
+   * Which transcript tier the excerpt came from. `plain` means no speaker names were found — worth a look.
+   */
+  excerptSource?: ('turns' | 'labels' | 'plain') | null;
+  /**
+   * Permit a second mailing for an episode that already has one.
+   */
+  allowDuplicate?: boolean | null;
+  /**
+   * Permit sending an episode published more than 60 days ago.
+   */
+  allowOldEpisode?: boolean | null;
+  recipientCount?: number | null;
+  sentCount?: number | null;
+  failedCount?: number | null;
+  queuedAt?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  testSentTo?: string | null;
+  lastError?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Newsletter subscribers and the consent recorded for each one.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletter-subscribers".
+ */
+export interface NewsletterSubscriber {
+  id: number;
+  email: string;
+  name?: string | null;
+  /**
+   * Only `confirmed` subscribers are ever sent a mailing.
+   */
+  status: 'pending' | 'confirmed' | 'unsubscribed' | 'bounced' | 'complained';
+  source: 'web' | 'import' | 'admin';
+  /**
+   * When consent was given. For imported rows, the original signup date.
+   */
+  consentAt?: string | null;
+  confirmedAt?: string | null;
+  unsubscribedAt?: string | null;
+  confirmSentAt?: string | null;
+  confirmTokenHash?: string | null;
+  confirmTokenExpiresAt?: string | null;
+  signupIp?: string | null;
+  signupUserAgent?: string | null;
+  bounceCount?: number | null;
+  lastError?: string | null;
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "contact-submissions".
  */
@@ -433,6 +526,28 @@ export interface Comment {
   email: string;
   message: string;
   status: 'pending' | 'approved' | 'rejected';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Per-recipient delivery log. One row per subscriber per mailing.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletter-deliveries".
+ */
+export interface NewsletterDelivery {
+  id: number;
+  mailing: number | NewsletterMailing;
+  subscriber: number | NewsletterSubscriber;
+  email: string;
+  /**
+   * A row left in `sending` means the outcome is unknown — it is never retried automatically, because a possible duplicate is worse than a possible miss. Check the provider console.
+   */
+  status: 'pending' | 'sending' | 'sent' | 'failed' | 'skipped';
+  attempts: number;
+  providerMessageId?: string | null;
+  lastError?: string | null;
+  sentAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1323,12 +1438,24 @@ export interface PayloadLockedDocument {
         value: number | Source;
       } | null)
     | ({
+        relationTo: 'newsletter-mailings';
+        value: number | NewsletterMailing;
+      } | null)
+    | ({
+        relationTo: 'newsletter-subscribers';
+        value: number | NewsletterSubscriber;
+      } | null)
+    | ({
         relationTo: 'contact-submissions';
         value: number | ContactSubmission;
       } | null)
     | ({
         relationTo: 'comments';
         value: number | Comment;
+      } | null)
+    | ({
+        relationTo: 'newsletter-deliveries';
+        value: number | NewsletterDelivery;
       } | null)
     | ({
         relationTo: 'page-views';
@@ -1580,6 +1707,57 @@ export interface SourcesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletter-mailings_select".
+ */
+export interface NewsletterMailingsSelect<T extends boolean = true> {
+  title?: T;
+  kind?: T;
+  episode?: T;
+  subject?: T;
+  preheader?: T;
+  status?: T;
+  bodyHtml?: T;
+  bodyText?: T;
+  htmlBytes?: T;
+  excerptSource?: T;
+  allowDuplicate?: T;
+  allowOldEpisode?: T;
+  recipientCount?: T;
+  sentCount?: T;
+  failedCount?: T;
+  queuedAt?: T;
+  startedAt?: T;
+  completedAt?: T;
+  testSentTo?: T;
+  lastError?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletter-subscribers_select".
+ */
+export interface NewsletterSubscribersSelect<T extends boolean = true> {
+  email?: T;
+  name?: T;
+  status?: T;
+  source?: T;
+  consentAt?: T;
+  confirmedAt?: T;
+  unsubscribedAt?: T;
+  confirmSentAt?: T;
+  confirmTokenHash?: T;
+  confirmTokenExpiresAt?: T;
+  signupIp?: T;
+  signupUserAgent?: T;
+  bounceCount?: T;
+  lastError?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "contact-submissions_select".
  */
 export interface ContactSubmissionsSelect<T extends boolean = true> {
@@ -1605,6 +1783,22 @@ export interface CommentsSelect<T extends boolean = true> {
   email?: T;
   message?: T;
   status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletter-deliveries_select".
+ */
+export interface NewsletterDeliveriesSelect<T extends boolean = true> {
+  mailing?: T;
+  subscriber?: T;
+  email?: T;
+  status?: T;
+  attempts?: T;
+  providerMessageId?: T;
+  lastError?: T;
+  sentAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

@@ -13,6 +13,9 @@ import { Guests } from './collections/Guests'
 import { MapPoints } from './collections/MapPoints'
 import { Media } from './collections/Media'
 import { Organizations } from './collections/Organizations'
+import { NewsletterDeliveries } from './collections/NewsletterDeliveries'
+import { NewsletterMailings } from './collections/NewsletterMailings'
+import { NewsletterSubscribers } from './collections/NewsletterSubscribers'
 import { ApiLimits } from './collections/ApiLimits'
 import { PageViews } from './collections/PageViews'
 import { Pages } from './collections/Pages'
@@ -93,8 +96,11 @@ export default buildConfig({
     Projects,
     Organizations,
     Sources,
+    NewsletterMailings,
+    NewsletterSubscribers,
     ContactSubmissions,
     Comments,
+    NewsletterDeliveries,
     PageViews,
     ApiLimits,
     Pages,
