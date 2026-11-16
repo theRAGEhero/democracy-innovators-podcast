@@ -14,6 +14,8 @@
 // nothing to hook onto. This module gives every recognised turn a wrapper the
 // stylesheet can reach, and hands back the cast so the page can print a key.
 
+import { escapeHtml } from '@/lib/html-escape'
+
 export type Speaker = {
   /** Label as it appears in the transcript. */
   name: string
@@ -87,10 +89,6 @@ function matchLabel(inner: string): Match | null {
   if (!time && !colon) return null
   if (!nameLike(name)) return null
   return { lead, name, time, rest: inner.slice(full.length) }
-}
-
-function escapeAttr(value: string): string {
-  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
 }
 
 /**
@@ -192,7 +190,7 @@ export function annotateSpeakers(
       const time = found.time ? `<span class="speaker-time">${found.time}</span>` : ''
       out +=
         `<p${attrs} class="speaker-turn" data-speaker="${slot}">` +
-        `<span class="speaker-cue"><span class="speaker-name">${escapeAttr(found.name)}</span>${time}</span>` +
+        `<span class="speaker-cue"><span class="speaker-name">${escapeHtml(found.name)}</span>${time}</span>` +
         `${found.rest}</p>`
       continue
     }

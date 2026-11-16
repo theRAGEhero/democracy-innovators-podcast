@@ -6,6 +6,8 @@
 // transcript HTML and splice a <h2> heading in front of the paragraph that
 // contains it, and build a matching table of contents.
 
+import { escapeHtml } from '@/lib/html-escape'
+
 export type Chapter = {
   startTime: number
   title: string
@@ -77,10 +79,6 @@ export function slugify(value: string): string {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
     .slice(0, 60)
-}
-
-function escapeHtml(value: string): string {
-  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
 // Normalized transcript text (lowercase alphanumeric words, single-spaced) plus a

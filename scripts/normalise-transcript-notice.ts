@@ -2,6 +2,8 @@ import 'dotenv/config'
 
 import { createClient } from '@libsql/client'
 
+import { TRANSCRIPT_NOTICE_MARKERS } from '@/lib/transcript-excerpt'
+
 // One sentence, on every episode, saying the same thing.
 //
 // The archive had accumulated thirty-one wordings of the same disclaimer across
@@ -20,19 +22,8 @@ const TRANSLATED_NOTICE =
   'This episode was automatically transcribed and translated, there could be errors. '
   + 'The original Italian transcription is after the English one.'
 
-const MARKERS = [
-  // The wording this script itself writes has to come first, or it cannot
-  // recognise its own output: every episode it had already fixed looked like
-  // one with no notice at all, and a second run would have added a duplicate
-  // disclaimer to fifty-eight pages.
-  'automatically transcribed',
-  'transcript of the conversation',
-  'full transcription of the interview',
-  'automatic transcription',
-  'automatic transcript',
-  'ai made transcription',
-  'interview transcription',
-]
+/** Shared with the newsletter excerpt, which strips the same notice. */
+const MARKERS = TRANSCRIPT_NOTICE_MARKERS
 
 /** The block that carries the disclaimer today, if there is one. */
 function existingNotice(html: string): { start: number; end: number } | null {

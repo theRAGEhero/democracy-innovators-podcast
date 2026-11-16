@@ -53,7 +53,7 @@ const CUE = new RegExp(
 
 /** Filler and stray sentence ends get swept into the capitalised run before a
  *  timestamp ("Mm. Alessandro Oppo"). Keep only words that could be a name. */
-function speakerName(raw: string): string | null {
+export function speakerName(raw: string): string | null {
   const words = raw.trim().split(/\s+/).filter(Boolean)
   // Drop leading fragments: anything ending in a full stop that is not an
   // initial is the tail of the previous sentence, not part of the name.
@@ -79,6 +79,26 @@ export function findCues(text: string): SpeakerCue[] {
     })
   }
   return cues
+}
+
+export type TranscriptTurn = { startTime: number; speaker: string | null; text: string }
+
+/**
+ * The transcript cut into turns, one per cue.
+ *
+ * Anything before the first cue is dropped, which is also what discards the
+ * archive's donation and auto-transcription preamble — 26 of the 69 published
+ * transcripts open with it.
+ */
+export function turnsFromTranscript(text: string): TranscriptTurn[] {
+  const cues = findCues(text)
+  return cues
+    .map((cue, index) => ({
+      startTime: cue.startTime,
+      speaker: cue.speaker,
+      text: text.slice(cue.textStart, cues[index + 1]?.offset ?? text.length).trim(),
+    }))
+    .filter((turn) => turn.text.length > 0)
 }
 
 /**

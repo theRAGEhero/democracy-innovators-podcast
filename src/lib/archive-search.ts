@@ -12,7 +12,12 @@ import {
   selectEvidenceChunks,
   timeForOffset,
 } from '@/lib/archive-rag'
-import { chapterForTime, findCues, turnBoundedQuote } from '@/lib/citation-context'
+import {
+  chapterForTime,
+  turnBoundedQuote,
+  turnsFromTranscript,
+  type TranscriptTurn,
+} from '@/lib/citation-context'
 import { chapterAnchorId, normalizeChapters, type Chapter } from '@/lib/chapters'
 
 // Search over the archive, in two modes with one answer shape.
@@ -299,7 +304,8 @@ export type EpisodeSummary = {
   url: string
 }
 
-export type Turn = { startTime: number; speaker: string | null; text: string }
+/** Kept as an alias so existing callers (mcp-tools, the chatbot) are untouched. */
+export type Turn = TranscriptTurn
 
 async function related(slugs: string[], table: 'guests' | 'topics'): Promise<Map<string, string[]>> {
   const map = new Map<string, string[]>()
@@ -395,9 +401,8 @@ export async function getEpisode(slug: string) {
 /**
  * The published transcript, cut into turns.
  *
- * Reuses findCues rather than parsing again: the archive writes speaker lines
- * as "Name (12:34)", and that regex is already the thing that knows every shape
- * the archive actually uses.
+ * The cutting lives in turnsFromTranscript, next to the cue regex that already
+ * knows every shape the archive uses. This function only fetches and windows.
  */
 export async function getTranscript(
   slug: string,
@@ -411,13 +416,7 @@ export async function getTranscript(
   const row = result.rows[0]
   if (!row) return null
 
-  const text = String(row.transcript_text || '')
-  const cues = findCues(text)
-  const turns: Turn[] = cues.map((cue, index) => ({
-    startTime: cue.startTime,
-    speaker: cue.speaker,
-    text: text.slice(cue.textStart, cues[index + 1]?.offset ?? text.length).trim(),
-  })).filter((turn) => turn.text.length > 0)
+  const turns = turnsFromTranscript(String(row.transcript_text || ''))
 
   const from = options.from
   const to = options.to
