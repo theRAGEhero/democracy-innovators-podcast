@@ -1,0 +1,11 @@
+[Unit]
+Description=Embed and index newly published episodes, daily
+
+[Timer]
+# After 09:00 Italian time, when the Gemini embedding allowance resets.
+OnCalendar=09:30
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

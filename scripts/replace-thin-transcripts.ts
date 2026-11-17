@@ -6,15 +6,30 @@ import path from 'node:path'
 import { createClient } from '@libsql/client'
 
 import { audioKey, loadDeepgramEpisodes } from './lib/deepgram-source'
+import { annotateSpeakers } from '@/lib/speakers'
 import type { Turn } from '@/lib/archive-rag'
 
-// Replacing a published transcript that is far shorter than the audio.
+// Replacing a published transcript with the timed one, for two defects.
 //
-// Nine of these episodes carry a partial transcript; three carry no transcript
-// at all but an AI summary in the third person, published under the heading
-// "Transcript of the Conversation" — a page saying something it does not have.
-// Measured as characters per minute of audio: real speech runs 650-1000, and
-// the worst of these runs at 86.
+// --thin (the default): the published text is far shorter than the audio. Nine
+// episodes carried a partial transcript; three carried no transcript at all but
+// an AI summary in the third person, published under the heading "Transcript of
+// the Conversation" — a page saying something it does not have. Measured as
+// characters per minute of audio: real speech runs 650-1000, and the worst of
+// these ran at 86.
+//
+// --untimed: the published text is complete but carries no clock anywhere, so
+// the page shows who spoke and never when. Eighteen episodes, 5 through 33, were
+// transcribed as "Name:" with no times, and one of those is lowercase
+// throughout and gets no speaker labels either. Nothing can infer a timestamp
+// from text that never had one, so the only fix is the audio's own clock.
+// These are NOT thin — they run 487-923 c/min — which is why the default mode
+// correctly leaves them alone.
+//
+// --unnamed: the published text has a clock but no speaker anywhere the page can
+// recognise. One episode, 29, was transcribed entirely in lower case, and every
+// speaker detector in this repo keys on a capitalised name, so the page shows a
+// wall of prose with nobody attached to it. Deepgram has two voices for it.
 //
 // ⚠️ The page body is not only the transcript. It also holds the Castopod and
 // YouTube embeds, and the episode page reads the Castopod URL and the outbound
@@ -32,6 +47,14 @@ const BACKUP_DIR = 'runtime/backups'
 /** Below this ratio the published text is a transcript with gaps, not a
  *  different kind of document, and rewriting it buys little. */
 const MIN_RATIO = 1.2
+/** In --untimed mode the two transcripts should be about the same length: the
+ *  point is to add the clock, not to replace the words. A Deepgram run that
+ *  came back much shorter than the published text is a failed transcription,
+ *  and swapping a complete transcript for it would be a loss. The eighteen run
+ *  0.90-1.16. */
+const MIN_UNTIMED_RATIO = 0.8
+/** Any clock at all, in either field. */
+const TIMESTAMP = /\d{1,2}:\d{2}(?::\d{2})?/
 
 /**
  * Where a transcript announces itself, case-insensitively.
@@ -110,6 +133,11 @@ export function renderTurns(turns: Turn[]): { html: string; text: string } {
 
 async function main() {
   const apply = process.argv.includes('--apply')
+  const mode: 'thin' | 'untimed' | 'unnamed' = process.argv.includes('--untimed')
+    ? 'untimed'
+    : process.argv.includes('--unnamed')
+      ? 'unnamed'
+      : 'thin'
   const db = createClient({ url: process.env.DATABASE_URL || 'file:./runtime/database/payload.db' })
   const source = loadDeepgramEpisodes()
   if (!source) {
@@ -133,7 +161,32 @@ async function main() {
     if (!found?.duration) continue
     const ours = String(row.transcript_text || '').length
     const theirs = found.utterances.reduce((sum, utterance) => sum + utterance.text.length + 1, 0)
-    if (!ours || theirs < ours * MIN_RATIO) continue
+    // An episode with no transcript at all is not this script's business in
+    // either mode: there is no boundary to find and nothing to compare.
+    if (!ours) continue
+
+    if (mode === 'thin') {
+      if (theirs < ours * MIN_RATIO) continue
+    } else {
+      if (mode === 'untimed') {
+        // Already has a clock, in either field: nothing to fix.
+        if (TIMESTAMP.test(String(row.html || '')) || TIMESTAMP.test(String(row.transcript_text || ''))) continue
+      } else {
+        // Asked without the episode's guest names on purpose: a transcript the
+        // page can only read with a hint is exactly the one being complained
+        // about here. The dry run names what it picked before anything is
+        // written.
+        if (annotateSpeakers(String(row.html || '')).speakers.length > 0) continue
+      }
+      if (theirs < ours * MIN_UNTIMED_RATIO) {
+        console.log(
+          `SALTATO  ${String(row.title).slice(0, 46)} — Deepgram più corto del pubblicato `
+            + `(${(theirs / ours).toFixed(2)}×, soglia ${MIN_UNTIMED_RATIO})`,
+        )
+        skipped += 1
+        continue
+      }
+    }
 
     const turnsFile = path.join(TURNS_DIR, `${row.slug}.json`)
     if (!fs.existsSync(turnsFile)) {
@@ -188,7 +241,7 @@ async function main() {
   }
 
   console.log(
-    `\n${apply ? 'Sostituiti' : 'Da sostituire'}: ${replaced}; saltati: ${skipped}.`
+    `\n[${mode}] ${apply ? 'Sostituiti' : 'Da sostituire'}: ${replaced}; saltati: ${skipped}.`
       + (apply
         ? `\nIl testo precedente è in ${BACKUP_DIR}/<slug>.${stamp}.json.`
           + '\n⚠️ Le ancore dei capitoli puntano al testo vecchio: ora è obbligatorio'

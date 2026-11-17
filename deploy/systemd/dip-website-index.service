@@ -1,0 +1,17 @@
+# Installed at /etc/systemd/system/, started by dip-website-index.timer.
+#
+# Root for the same reasons as dip-website-sync: it reads RSS-Analysis's
+# database under /root and writes the site's SQLite file under runtime/.
+[Unit]
+Description=Democracy Innovators website: import timed transcripts, embed what changed, rebuild the search index
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/democracy-innovators-podcast
+ExecStart=/root/democracy-innovators-podcast/scripts/index-published.sh
+# The full archive is re-hashed each run and embedding is network-bound.
+TimeoutStartSec=3600
+StandardOutput=journal
+StandardError=journal
