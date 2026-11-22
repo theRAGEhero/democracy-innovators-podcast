@@ -9,6 +9,20 @@ test.describe('Frontend', () => {
     await expect(page.locator('h1').first()).toBeVisible()
   })
 
+  // The section heading carries the same link, but it scrolls out of sight long
+  // before the last row — and below 620px it sits above the first one. This is
+  // the exit for whoever reads to the end.
+  test('the homepage episode list ends with a way into the archive', async ({ page }) => {
+    test.slow() // this may be the first test to compile /episodes
+    await page.goto(BASE)
+    const tail = page.locator('.archive-section-footer')
+    await expect(tail).toBeVisible()
+    await expect(tail.getByRole('link', { name: /episodes/i })).toHaveAttribute('href', '/episodes')
+    await tail.getByRole('link', { name: /episodes/i }).click()
+    await expect(page).toHaveURL(/\/episodes$/)
+    await expect(page.locator('.episode-row').first()).toBeVisible()
+  })
+
   test('episodes listing renders episodes', async ({ page }) => {
     await page.goto(`${BASE}/episodes`)
     await expect(page.locator('.episode-row').first()).toBeVisible()

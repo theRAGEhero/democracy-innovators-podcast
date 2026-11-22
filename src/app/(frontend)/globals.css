@@ -286,6 +286,9 @@ body::before {
 .section-heading h2 { max-width: 760px; margin: 12px 0 0; font-size: clamp(2.5rem, 5vw, 4.6rem); font-weight: 400; letter-spacing: -.045em; line-height: .95; }
 
 .episode-list { border-top: 1px solid var(--rule); }
+/* The last row already draws a rule, so this adds no second line of its own:
+   it hangs below that rule as the way out of the list. */
+.archive-section-footer { display: flex; flex-wrap: wrap; gap: 16px 36px; margin-top: 26px; }
 .episode-row { display: grid; grid-template-columns: 60px 230px 1fr; gap: 28px; align-items: center; padding: 24px 0; border-bottom: 1px solid var(--rule); }
 .index-number, .directory-number { align-self: start; padding-top: 4px; color: var(--terracotta); font: 500 .7rem/1 var(--mono); }
 .episode-image-link { display: block; aspect-ratio: 16 / 9; overflow: hidden; background: var(--blue); }

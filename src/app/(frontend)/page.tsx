@@ -15,7 +15,7 @@ export const revalidate = 3600
 export const metadata: Metadata = { alternates: { canonical: '/' } }
 
 export default async function HomePage() {
-  const { docs: episodes } = await getEpisodes(7)
+  const { docs: episodes, totalDocs } = await getEpisodes(7)
   const featured = episodes[0]
   const origin = getServerSideURL()
   const siteJsonLd = {
@@ -123,6 +123,17 @@ export default async function HomePage() {
             <EpisodeRow episode={episode} key={episode.id} />
           ))}
         </div>
+        {/* The heading's link is the section's other exit, but it sits above the
+            list — and below 620px it stacks above the first row — so whoever
+            reads to the end needs a door of their own. The two destinations are
+            the archive page's own: the whole list, and the search for one name.
+            totalDocs rides along with the query above, so the count is free. */}
+        <nav aria-label="More from the archive" className="archive-section-footer">
+          <Link className="text-link" href="/episodes">
+            {totalDocs > 0 ? `All ${totalDocs} episodes` : 'All episodes'} <span aria-hidden="true">→</span>
+          </Link>
+          <Link className="text-link" href="/search">Search the archive <span aria-hidden="true">→</span></Link>
+        </nav>
       </section>
 
       {/* Deliberately after the episodes rather than in the hero: it asks only
