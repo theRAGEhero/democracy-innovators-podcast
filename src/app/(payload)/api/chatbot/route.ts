@@ -16,6 +16,7 @@ import {
   timeForOffset,
 } from '@/lib/archive-rag'
 import { chapterAnchorId } from '@/lib/chapters'
+import { publishedEpisodeIds } from '@/lib/archive-search'
 import { isRateLimited } from '@/lib/rate-limit'
 
 const RATE_LIMIT = { scope: 'chatbot', limit: 10, windowMs: 60_000 }
@@ -46,7 +47,8 @@ export async function POST(request: Request) {
 
   // Straight from SQLite and cached: the ORM charged ~20s per question to hand
   // back vectors the cosine then used for 89ms. See loadEmbeddedChunks().
-  const chunks = await loadEmbeddedChunks(EMBEDDING_MODEL)
+  const publishedIds = await publishedEpisodeIds()
+  const chunks = (await loadEmbeddedChunks(EMBEDDING_MODEL)).filter((chunk) => publishedIds.has(Number(chunk.episodeId)))
 
   if (!chunks.length) {
     return Response.json({

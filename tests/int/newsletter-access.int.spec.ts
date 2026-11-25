@@ -20,6 +20,7 @@ beforeAll(async () => {
 async function subscriber(email: string, status: NewsletterSubscriber['status'] = 'confirmed') {
   return payload.create({
     collection: 'newsletter-subscribers',
+    draft: false,
     data: { email, status, source: 'web', consentAt: new Date().toISOString() },
     overrideAccess: true,
   })
@@ -41,6 +42,7 @@ describe('newsletter collections are closed to the public', () => {
     await expect(
       payload.create({
         collection: 'newsletter-subscribers',
+        draft: false,
         data: { email: 'intruder@example.org', status: 'confirmed', source: 'web' },
         ...anonymous,
       }),

@@ -1,6 +1,7 @@
 import { EpisodeRow } from '@/components/EpisodeRow'
 import { getEpisodes, getTopics } from '@/lib/content'
 import { getServerSideURL } from '@/lib/getURL'
+import { serializeJsonLd } from '@/lib/json-ld'
 import { collectionJsonLd } from '@/lib/seo'
 import type { Metadata } from 'next'
 import Link from 'next/link'
@@ -50,7 +51,7 @@ export default async function EpisodesPage({
 
   return (
     <main className="inner-page">
-      <script dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} type="application/ld+json" />
+      <script dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} type="application/ld+json" />
       <header className="page-intro">
         <p className="section-label">
           Archive · {total} conversation{total === 1 ? '' : 's'}

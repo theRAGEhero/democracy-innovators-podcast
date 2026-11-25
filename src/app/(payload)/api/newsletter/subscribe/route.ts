@@ -68,6 +68,7 @@ export async function POST(request: Request) {
     token = fresh.token
     await payload.create({
       collection: 'newsletter-subscribers',
+      draft: false,
       data: {
         email: validated.email,
         name: validated.name || undefined,

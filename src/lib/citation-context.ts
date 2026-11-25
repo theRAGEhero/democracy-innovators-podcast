@@ -262,7 +262,7 @@ export async function loadCitedEpisodes(ids: number[]): Promise<Map<number, Cite
   try {
     const result = await client.execute({
       sql: `SELECT id, slug, title, audio_url, square_cover_url, feature_image_url, chapters, transcript_text
-            FROM episodes WHERE id IN (${unique.map(() => '?').join(',')})`,
+            FROM episodes WHERE _status = 'published' AND id IN (${unique.map(() => '?').join(',')})`,
       args: unique,
     })
     for (const row of result.rows) {

@@ -2,6 +2,7 @@ import { getPayload, type Payload } from 'payload'
 import { beforeAll, describe, expect, it } from 'vitest'
 
 import config from '@/payload.config'
+import { POST as createComment } from '@/app/(payload)/api/comments/[episodeId]/route'
 import { clearRateLimits, isRateLimited, trackedKeys } from '@/lib/rate-limit'
 
 // What an anonymous caller can see.
@@ -76,6 +77,41 @@ describe('what the public API exposes', () => {
     const asEditor = await payload.find({ collection: 'comments', depth: 0, overrideAccess: true })
     expect(asEditor.docs.map((doc) => doc.email).filter(Boolean)).toHaveLength(2)
   })
+
+  it('rejects anonymous self-approved generic comments but keeps the custom form pending', async () => {
+    const episode = await publish('Moderated comments', 'moderated-comments')
+    await expect(payload.create({
+      collection: 'comments',
+      data: { episode: episode.id, name: 'Bypass', email: 'bypass@example.com', message: 'self approved', status: 'approved' },
+      ...anonymous,
+    })).rejects.toThrow()
+
+    clearRateLimits()
+    const response = await createComment(new Request('https://example.test/api/comments', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-real-ip': '203.0.113.10' },
+      body: JSON.stringify({ name: 'Reader', email: 'reader@example.com', message: 'A legitimate comment', status: 'approved' }),
+    }), { params: Promise.resolve({ episodeId: String(episode.id) }) })
+    expect(response.status).toBe(201)
+    const { docs } = await payload.find({ collection: 'comments', where: { episode: { equals: episode.id } }, overrideAccess: true })
+    expect(docs).toHaveLength(1)
+    expect(docs[0].status).toBe('pending')
+  })
+
+  it('does not expose guest drafts through anonymous draft queries', async () => {
+    const guest = await payload.create({
+      collection: 'guests',
+      data: { name: 'Draft guest', slug: 'draft-guest' },
+      draft: true,
+      overrideAccess: true,
+    })
+    const beforePublication = await payload.find({ collection: 'guests', draft: true, ...anonymous })
+    expect(beforePublication.docs.map((doc) => doc.slug)).not.toContain('draft-guest')
+
+    await payload.update({ collection: 'guests', id: guest.id, data: { _status: 'published' }, overrideAccess: true })
+    const afterPublication = await payload.find({ collection: 'guests', draft: true, ...anonymous })
+    expect(afterPublication.docs.map((doc) => doc.slug)).toContain('draft-guest')
+  })
 })
 
 describe('the shared rate limiter', () => {
@@ -120,5 +156,23 @@ describe('the shared rate limiter', () => {
     const viaProxies = new Request('https://example.test/', { headers: { 'x-forwarded-for': '9.9.9.9, 10.0.0.1, 10.0.0.2' } })
     expect(isRateLimited(viaProxies, options)).toBe(false)
     expect(isRateLimited(request('9.9.9.9'), options)).toBe(true)
+  })
+
+  it('prefers the normalized real-ip header over spoofed forwarding input', () => {
+    clearRateLimits()
+    const options = { scope, limit: 1, windowMs: 60_000 }
+    const viaTrustedProxy = new Request('https://example.test/', {
+      headers: { 'x-real-ip': '9.9.9.9', 'x-forwarded-for': '1.2.3.4, 9.9.9.9' },
+    })
+    expect(isRateLimited(viaTrustedProxy, options)).toBe(false)
+    expect(isRateLimited(request('9.9.9.9'), options)).toBe(true)
+    expect(isRateLimited(request('1.2.3.4'), options)).toBe(false)
+  })
+
+  it('bounds active key cardinality without a full-map prune per request', () => {
+    clearRateLimits()
+    const options = { scope, limit: 1, windowMs: 60_000 }
+    for (let i = 0; i < 5_100; i += 1) isRateLimited(request(`203.0.${Math.floor(i / 250)}.${i % 250}`), options)
+    expect(trackedKeys(scope)).toBe(5_000)
   })
 })

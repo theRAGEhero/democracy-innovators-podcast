@@ -2,6 +2,7 @@ import { EpisodeRow } from '@/components/EpisodeRow'
 import { MobilePlatformBar } from '@/components/MobilePlatformBar'
 import { getEpisodes } from '@/lib/content'
 import { getServerSideURL } from '@/lib/getURL'
+import { serializeJsonLd } from '@/lib/json-ld'
 import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -78,7 +79,7 @@ export default async function HomePage() {
 
   return (
     <main className="home-page">
-      <script dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }} type="application/ld+json" />
+      <script dangerouslySetInnerHTML={{ __html: serializeJsonLd(siteJsonLd) }} type="application/ld+json" />
       <section className="home-hero">
         <p className="section-label">Podcast · Living civic archive</p>
         <h1>Conversations with people redesigning democracy.</h1>

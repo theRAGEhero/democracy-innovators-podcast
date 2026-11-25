@@ -1,4 +1,5 @@
 import { getGuests } from '@/lib/content'
+import { serializeJsonLd } from '@/lib/json-ld'
 import { getServerSideURL } from '@/lib/getURL'
 import { collectionJsonLd } from '@/lib/seo'
 import type { Metadata } from 'next'
@@ -26,7 +27,7 @@ export default async function PeoplePage() {
   })
   return (
     <main className="inner-page">
-      <script dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} type="application/ld+json" />
+      <script dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} type="application/ld+json" />
       <header className="page-intro people-intro">
         <p className="section-label">People · {guests.length} profiles</p>
         <h1>The civic archive</h1>

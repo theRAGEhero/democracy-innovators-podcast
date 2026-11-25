@@ -1,4 +1,5 @@
 import type { CollectionBeforeValidateHook, CollectionConfig } from 'payload'
+import { randomBytes } from 'node:crypto'
 
 import { authenticated } from '@/access/authenticated'
 
@@ -17,8 +18,12 @@ import { authenticated } from '@/access/authenticated'
  * diverge from the schema the integration suite builds with `push: true`. One
  * hook instead, so the admin, the public route and the CSV importer agree.
  */
-const normaliseEmail: CollectionBeforeValidateHook = ({ data }) => {
+const normaliseEmail: CollectionBeforeValidateHook = ({ data, operation }) => {
   if (data?.email) data.email = String(data.email).trim().toLowerCase()
+  if (operation === 'create' && data) {
+    data.unsubscribeKey ||= randomBytes(24).toString('base64url')
+    data.unsubscribeTokenVersion ||= 2
+  }
   return data
 }
 
@@ -68,6 +73,8 @@ export const NewsletterSubscribers: CollectionConfig = {
     // confirmation links. The raw token exists once, in one email.
     { name: 'confirmTokenHash', type: 'text', index: true, admin: { readOnly: true, hidden: true } },
     { name: 'confirmTokenExpiresAt', type: 'date', admin: { readOnly: true, hidden: true } },
+    { name: 'unsubscribeKey', type: 'text', index: true, admin: { readOnly: true, hidden: true } },
+    { name: 'unsubscribeTokenVersion', type: 'number', defaultValue: 2, admin: { readOnly: true, hidden: true } },
     { name: 'signupIp', type: 'text', admin: { readOnly: true } },
     { name: 'signupUserAgent', type: 'text', admin: { readOnly: true } },
     { name: 'bounceCount', type: 'number', defaultValue: 0, min: 0, admin: { readOnly: true } },

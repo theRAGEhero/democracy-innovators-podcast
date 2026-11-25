@@ -11,6 +11,8 @@ import { breadcrumbJsonLd, metaDescription } from '@/lib/seo'
 import Image from 'next/image'
 import { MobileEpisodeBar } from '@/components/MobileEpisodeBar'
 import { getServerSideURL } from '@/lib/getURL'
+import { serializeJsonLd } from '@/lib/json-ld'
+import { sanitizeEpisodeHtml } from '@/lib/sanitize-episode-html'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { draftMode } from 'next/headers'
@@ -61,14 +63,15 @@ export default async function EpisodePage({ params }: { params: Promise<{ slug: 
   const chapters = normalizeChapters(episode.chapters)
   const episodeUrl = `${getServerSideURL()}/episode/${episode.slug}`
   const { related, previous, next } = await getEpisodeContext(episode)
-  const { html: chapteredHtml, toc } = buildTranscriptChapters(rewriteSupportLinks(embedYouTube(episode.html || '')), episode.chapters)
+  const sanitizedHtml = sanitizeEpisodeHtml(episode.html || '')
+  const { html: chapteredHtml, toc } = buildTranscriptChapters(rewriteSupportLinks(embedYouTube(sanitizedHtml)), episode.chapters)
   // After the chapter pass, never before: buildTranscriptChapters locates its
   // anchors on a normalised copy of the transcript in which the timestamp
   // digits count, so rewriting the speaker line first can shift the offsets.
   const { html: transcriptHtml, speakers } = annotateSpeakers(chapteredHtml, guests.map((guest) => guest.name))
   const usefulLinks = [
     ...guests.flatMap((guest) => guest.officialLinks?.map((link) => ({ label: link.label || guest.name, url: link.url })) || []),
-    ...transcriptLinks(episode.html),
+    ...transcriptLinks(sanitizedHtml),
     ...organizations.filter((organization) => organization.website).map((organization) => ({ label: organization.name, url: organization.website! })),
     ...projects.filter((project) => project.website).map((project) => ({ label: project.name, url: project.website! })),
   ].filter((link, index, links) => links.findIndex((item) => item.url === link.url) === index)
@@ -98,8 +101,8 @@ export default async function EpisodePage({ params }: { params: Promise<{ slug: 
     ...(topics.length ? { about: topics.map((topic) => topic.name) } : {}),
     ...(chapters.length ? { hasPart: chapterJsonLd(chapters, episodeUrl) } : {}),
   }
-  const youtubeId = extractYouTubeId(episode.videoUrl, episode.html)
-  const castopodUrl = extractCastopodEpisodeUrl(episode.html)
+  const youtubeId = extractYouTubeId(episode.videoUrl, sanitizedHtml)
+  const castopodUrl = extractCastopodEpisodeUrl(sanitizedHtml)
   const playerEpisode = episode.audioUrl ? { id: episode.id, slug: episode.slug, title: episode.title, audioUrl: episode.audioUrl, coverUrl: episode.squareCoverUrl || episode.featureImageUrl, castopodUrl, chapters } : null
   const jsonLd: object[] = [
     schema,
@@ -125,7 +128,7 @@ export default async function EpisodePage({ params }: { params: Promise<{ slug: 
   return (
     <main className="episode-page">
       <script
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd.length === 1 ? jsonLd[0] : jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd.length === 1 ? jsonLd[0] : jsonLd) }}
         type="application/ld+json"
       />
       <Link className="back-link" href="/episodes">← All episodes</Link>

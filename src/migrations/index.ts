@@ -8,6 +8,7 @@ import * as migration_20260820_150000_episode_square_cover from './20260820_1500
 import * as migration_20260830_120000_chunk_timing from './20260830_120000_chunk_timing';
 import * as migration_20261008_140000_episode_number from './20261008_140000_episode_number';
 import * as migration_20261116_120000_newsletter from './20261116_120000_newsletter';
+import * as migration_20261125_120000_unsubscribe_capabilities from './20261125_120000_unsubscribe_capabilities';
 
 export const migrations = [
   {
@@ -59,5 +60,10 @@ export const migrations = [
     up: migration_20261116_120000_newsletter.up,
     down: migration_20261116_120000_newsletter.down,
     name: '20261116_120000_newsletter'
+  },
+  {
+    up: migration_20261125_120000_unsubscribe_capabilities.up,
+    down: migration_20261125_120000_unsubscribe_capabilities.down,
+    name: '20261125_120000_unsubscribe_capabilities'
   },
 ];

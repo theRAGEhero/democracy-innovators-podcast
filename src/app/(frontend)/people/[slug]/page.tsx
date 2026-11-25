@@ -1,4 +1,5 @@
 import { getGuest, getGuests } from '@/lib/content'
+import { serializeJsonLd } from '@/lib/json-ld'
 import { getServerSideURL } from '@/lib/getURL'
 import { breadcrumbJsonLd } from '@/lib/seo'
 import { EpisodeRow } from '@/components/EpisodeRow'
@@ -84,7 +85,7 @@ export default async function GuestPage({ params }: { params: Promise<{ slug: st
 
   return (
     <main className="profile-page">
-      <script dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} type="application/ld+json" />
+      <script dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} type="application/ld+json" />
       <Link className="back-link" href="/people">← People directory</Link>
 
       <header className="participation-hero">

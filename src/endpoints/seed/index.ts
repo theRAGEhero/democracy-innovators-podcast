@@ -1,4 +1,5 @@
 import type { CollectionSlug, GlobalSlug, Payload, PayloadRequest, File } from 'payload'
+import { randomBytes } from 'node:crypto'
 
 import { contactForm as contactFormData } from './contact-form'
 import { contact as contactPageData } from './contact-page'
@@ -104,7 +105,7 @@ export const seed = async ({
       data: {
         name: 'Demo Author',
         email: 'demo-author@example.com',
-        password: 'password',
+        password: randomBytes(24).toString('base64url'),
       },
     }),
     payload.create({

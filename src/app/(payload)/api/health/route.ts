@@ -32,11 +32,12 @@ export async function GET() {
     }
     return Response.json({ status: 'ok', service: 'democracy-innovators-podcast', passages })
   } catch (error) {
+    console.error('Archive health check failed', error)
     return Response.json(
       {
         status: 'error',
         service: 'democracy-innovators-podcast',
-        error: error instanceof Error ? error.message : 'database unreachable',
+        error: 'database unreachable',
       },
       { status: 503 },
     )

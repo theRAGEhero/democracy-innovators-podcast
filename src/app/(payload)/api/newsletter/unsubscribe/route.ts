@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     }
   }
 
-  if (!id || !verifyUnsubscribeToken(id, token)) {
+  if (!id || !token) {
     return Response.json({ error: 'That unsubscribe link is not valid.' }, { status: 400 })
   }
 
@@ -44,9 +44,11 @@ export async function POST(request: Request) {
     .findByID({ collection: 'newsletter-subscribers', id, depth: 0, overrideAccess: true })
     .catch(() => null)
 
-  // A valid token for a row that no longer exists is already the outcome the
-  // caller wanted.
+  // A link for a row that no longer exists is already the outcome it requested.
   if (!subscriber) return Response.json({ ok: true })
+  if (!verifyUnsubscribeToken(subscriber, token)) {
+    return Response.json({ error: 'That unsubscribe link is not valid.' }, { status: 400 })
+  }
 
   if (subscriber.status !== 'unsubscribed') {
     await payload.update({

@@ -1,5 +1,4 @@
 import type { Access, CollectionConfig } from 'payload'
-import { anyone } from '@/access/anyone'
 import { authenticated } from '@/access/authenticated'
 
 /** Anyone may read a comment once it has been approved; an editor sees them all.
@@ -11,7 +10,7 @@ const approvedOrAuthenticated: Access = ({ req: { user } }) =>
 export const Comments: CollectionConfig = {
   slug: 'comments',
   access: {
-    create: anyone,
+    create: authenticated,
     delete: authenticated,
     read: approvedOrAuthenticated,
     update: authenticated,

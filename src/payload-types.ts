@@ -486,6 +486,8 @@ export interface NewsletterSubscriber {
   confirmSentAt?: string | null;
   confirmTokenHash?: string | null;
   confirmTokenExpiresAt?: string | null;
+  unsubscribeKey?: string | null;
+  unsubscribeTokenVersion?: number | null;
   signupIp?: string | null;
   signupUserAgent?: string | null;
   bounceCount?: number | null;
@@ -1748,6 +1750,8 @@ export interface NewsletterSubscribersSelect<T extends boolean = true> {
   confirmSentAt?: T;
   confirmTokenHash?: T;
   confirmTokenExpiresAt?: T;
+  unsubscribeKey?: T;
+  unsubscribeTokenVersion?: T;
   signupIp?: T;
   signupUserAgent?: T;
   bounceCount?: T;

@@ -4,7 +4,9 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import { createClient } from '@libsql/client'
 
 import config from '@/payload.config'
-import { closeSearchClient, getTranscript, listEpisodes, searchKeyword, toMatchQuery } from '@/lib/archive-search'
+import { closeSearchClient, getTranscript, listEpisodes, searchKeyword, searchSemantic, toMatchQuery } from '@/lib/archive-search'
+import { clearChunkCache } from '@/lib/archive-rag'
+import { loadCitedEpisodes } from '@/lib/citation-context'
 import { POST } from '@/app/(payload)/api/mcp/route'
 
 let payload: Payload
@@ -92,6 +94,18 @@ describe('keyword search', () => {
     expect(await searchKeyword('quorum sensing', 5)).toEqual([])
   })
 
+  it('does not authorize stale chunks when another episode reuses their slug', async () => {
+    const original = await publishEpisode('shared-slug', 'Original episode')
+    await addChunk(original.id, 'shared-slug', 'Original episode', 'UNPUBLISHED_SENTINEL from the original episode.', 0)
+    await payload.update({ collection: 'episodes', id: original.id, data: { _status: 'draft', slug: 'hidden-original' }, overrideAccess: true })
+    await publishEpisode('shared-slug', 'Replacement episode')
+
+    expect(await searchKeyword('UNPUBLISHED_SENTINEL', 5)).toEqual([])
+    clearChunkCache()
+    const semanticHits = await searchSemantic('UNPUBLISHED_SENTINEL', 5, { vector: [0.1, 0.2, 0.3] })
+    expect(semanticHits.some((hit) => hit.text.includes('UNPUBLISHED_SENTINEL'))).toBe(false)
+  })
+
   it('does not match an episode that never says the words', async () => {
     const hits = await searchKeyword('assembly deliberate', 5)
     expect(hits.map((hit) => hit.episodeSlug)).toContain('assemblies-two')
@@ -140,6 +154,13 @@ describe('reading a transcript', () => {
     // alone would return nothing at all.
     expect(windowed?.turns).toHaveLength(1)
     expect(windowed?.turns[0].speaker).toBe('Paolo Spada')
+  })
+
+  it('loads citations only for episodes that are currently published', async () => {
+    const episode = await publishEpisode('citation-lifecycle', 'Citation lifecycle')
+    expect((await loadCitedEpisodes([Number(episode.id)])).has(Number(episode.id))).toBe(true)
+    await payload.update({ collection: 'episodes', id: episode.id, data: { _status: 'draft' }, overrideAccess: true })
+    expect((await loadCitedEpisodes([Number(episode.id)])).has(Number(episode.id))).toBe(false)
   })
 
   it('lists published episodes newest first', async () => {

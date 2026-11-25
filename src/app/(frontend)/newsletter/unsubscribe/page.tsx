@@ -30,17 +30,20 @@ export default async function NewsletterUnsubscribePage({
   searchParams: Promise<{ s?: string; t?: string }>
 }) {
   const { s: id, t: token } = await searchParams
-  const valid = Boolean(id && verifyUnsubscribeToken(id, token))
 
   let email: string | null = null
   let already = false
-  if (valid && id) {
+  let valid = false
+  if (id && token) {
     const payload = await getPayload({ config })
     const subscriber = await payload
       .findByID({ collection: 'newsletter-subscribers', id, depth: 0, overrideAccess: true })
       .catch(() => null)
-    email = subscriber?.email ?? null
-    already = subscriber?.status === 'unsubscribed'
+    valid = Boolean(subscriber && verifyUnsubscribeToken(subscriber, token))
+    if (valid) {
+      email = subscriber?.email ?? null
+      already = subscriber?.status === 'unsubscribed'
+    }
   }
 
   if (!valid) {

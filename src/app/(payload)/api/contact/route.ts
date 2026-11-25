@@ -2,7 +2,7 @@ import config from '@payload-config'
 import { getPayload } from 'payload'
 
 import { sendContactEmail, type ContactMessage } from '@/lib/contact-mail'
-import { isRateLimited } from '@/lib/rate-limit'
+import { clientKey, isRateLimited } from '@/lib/rate-limit'
 
 const RATE_LIMIT = { scope: 'contact', limit: 3, windowMs: 60_000 }
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
       status: 'new',
       emailSent,
       userAgent: request.headers.get('user-agent') || undefined,
-      ipAddress: request.headers.get('x-real-ip') || request.headers.get('x-forwarded-for')?.split(',').at(-1)?.trim() || undefined,
+      ipAddress: clientKey(request) === 'unknown' ? undefined : clientKey(request),
     },
     overrideAccess: true,
   })

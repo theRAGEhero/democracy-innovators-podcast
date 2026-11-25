@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getPayload } from 'payload'
 import { getServerSideURL } from '@/lib/getURL'
+import { serializeJsonLd } from '@/lib/json-ld'
 import { breadcrumbJsonLd, collectionJsonLd, metaDescription } from '@/lib/seo'
 
 export const revalidate = 3600
@@ -51,5 +52,5 @@ export default async function TopicPage({ params }: { params: Promise<{ slug: st
       items: result.episodes.map((episode) => ({ name: episode.title, url: `${origin}/episode/${episode.slug}` })),
     }),
   ]
-  return <main className="inner-page"><script dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} type="application/ld+json" /><Link className="back-link" href="/topics">← All topics</Link><header className="page-intro"><p className="section-label">Topic dossier · {result.episodes.length} conversations</p><h1>{result.topic.name}</h1><p>{result.topic.description || `Explore interviews connected to ${result.topic.name.toLowerCase()} across the Democracy Innovators archive.`}</p></header><div className="profile-episodes">{result.episodes.map((episode) => <Link href={`/episode/${episode.slug}`} key={episode.id}>{episode.title}<span>→</span></Link>)}</div></main>
+  return <main className="inner-page"><script dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} type="application/ld+json" /><Link className="back-link" href="/topics">← All topics</Link><header className="page-intro"><p className="section-label">Topic dossier · {result.episodes.length} conversations</p><h1>{result.topic.name}</h1><p>{result.topic.description || `Explore interviews connected to ${result.topic.name.toLowerCase()} across the Democracy Innovators archive.`}</p></header><div className="profile-episodes">{result.episodes.map((episode) => <Link href={`/episode/${episode.slug}`} key={episode.id}>{episode.title}<span>→</span></Link>)}</div></main>
 }

@@ -1,6 +1,13 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionBeforeValidateHook, CollectionConfig } from 'payload'
 
 import { authenticated } from '../../access/authenticated'
+
+const revokeSessionsOnPasswordChange: CollectionBeforeValidateHook = ({ data, operation }) => {
+  if (operation === 'update' && (data?.password || (data?.salt && data?.hash))) {
+    data.sessions = []
+  }
+  return data
+}
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -17,7 +24,9 @@ export const Users: CollectionConfig = {
   },
   auth: {
     useAPIKey: true,
+    cookies: { secure: process.env.NODE_ENV === 'production' },
   },
+  hooks: { beforeValidate: [revokeSessionsOnPasswordChange] },
   fields: [
     {
       name: 'name',

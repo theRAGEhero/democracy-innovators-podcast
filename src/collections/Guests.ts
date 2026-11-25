@@ -1,14 +1,14 @@
 import type { CollectionConfig } from 'payload'
 
-import { anyone } from '@/access/anyone'
 import { authenticated } from '@/access/authenticated'
+import { authenticatedOrPublished } from '@/access/authenticatedOrPublished'
 
 export const Guests: CollectionConfig = {
   slug: 'guests',
   access: {
     create: authenticated,
     delete: authenticated,
-    read: anyone,
+    read: authenticatedOrPublished,
     update: authenticated,
   },
   admin: {
